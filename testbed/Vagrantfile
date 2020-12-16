@@ -1,0 +1,52 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# This will set up the two VMs required to run the EPC and RAN
+# It will:
+# => Add bridged and internal networks
+# => Set IP address and routing
+# => Add IP forwarding to EPC to allow traffic to flow to the core
+# Later, I will add:
+# => Mininet, BMV2
+# => Separate docker containers from bridged network
+# => Connect containers to software switch as a bridge
+# => Implement P4 to test in-band network monitoring
+
+Vagrant.configure("2") do |config|
+
+  # config.vm.provision "shell", inline: "echo Hello"
+
+  config.vm.define "epc" do |epc|
+    epc.vm.box = "ubuntu/bionic64"
+
+    # NOTE: Set `VAGRANT_EXPERIMENTAL="disks"` before running
+    epc.vm.disk :disk, size: "50GB", primary: true
+
+    epc.vm.provider "virtualbox" do |v|
+      v.name = "epc"
+      v.memory = 4096
+      v.cpus = 1
+    end
+
+    epc.vm.network "private_network", ip: "10.10.1.2", virtualbox__intnet: true
+
+    epc.vm.provision "shell", path: "scripts/bootstrap_epc.sh"
+  end
+
+  config.vm.define "ran" do |ran|
+    ran.vm.box = "ubuntu/bionic64"
+
+    ran.vm.disk :disk, size: "20GB", primary: true
+
+    ran.vm.provider "virtualbox" do |v|
+      v.name = "ran"
+      v.memory = 4096
+      v.cpus = 1
+    end
+
+    ran.vm.network "private_network", ip: "10.10.1.1", virtualbox__intnet: true
+
+    ran.vm.provision "shell", path: "scripts/bootstrap_ran.sh"
+
+  end
+end
