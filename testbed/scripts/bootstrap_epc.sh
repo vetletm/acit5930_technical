@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set +x
 
-apt update
+apt-get update
 
-apt install -y \
+# Docker
+apt-get install -y \
     apt-transport-https \
     ca-certificates \
     curl \
@@ -17,16 +18,16 @@ add-apt-repository \
    $(lsb_release -cs) \
    stable"
 
-apt update
+apt-get update
 
 # Docker
-apt install -y docker-ce docker-ce-cli containerd.io
+apt-get install -y docker-ce docker-ce-cli containerd.io
 
 # Python
-apt install -y python3
+apt-get install -y python3
 
 # iptables-persistent for persistent tables
-apt install -y iptables-persistent
+# apt-get install -y iptables-persistent
 
 useradd -m -d /home/netmon -s /bin/bash netmon
 echo "netmon:netmon" | chpasswd
@@ -40,4 +41,4 @@ echo "net.ipv4.conf.all.forwarding=1" >> /etc/sysctl.d/forwarding.conf
 
 # Allow and make persistent
 iptables -P FORWARD ACCEPT
-iptables-save > /etc/iptables/rules.v4
+# iptables-save > /etc/iptables/rules.v4

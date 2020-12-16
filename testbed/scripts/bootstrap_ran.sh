@@ -2,8 +2,8 @@
 
 set +x
 
-apt update
-apt install git
+apt-get update
+apt-get install -y git
 
 useradd -m -d /home/netmon -s /bin/bash netmon
 echo "netmon:netmon" | chpasswd
