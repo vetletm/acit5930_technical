@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-git clone https://github.com/OPENAIRINTERFACE/openair-epc-fed.git
-cd openair-epc-fed
+BASE_DIR="/home/netmon/src"
+
+git clone https://github.com/OPENAIRINTERFACE/openair-epc-fed.git "$BASE_DIR/openair-epc-fed"
+cd "$BASE_DIR"/openair-epc-fed
 git checkout master
 git pull origin master
 ./scripts/syncComponents.sh

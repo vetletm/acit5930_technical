@@ -25,13 +25,13 @@ Vagrant.configure("2") do |config|
     epc.vm.provider "virtualbox" do |v|
       v.name = "epc"
       v.memory = 4096
-      v.cpus = 1
+      v.cpus = 2
     end
 
     epc.vm.network "private_network", ip: "10.10.1.2", virtualbox__intnet: true
 
     epc.vm.provision "shell", path: "scripts/bootstrap_epc.sh"
-    epc.vm.provision "shell", privileged: false, path: "scripts/user_epc.sh"
+    # epc.vm.provision "shell", privileged: false, path: "scripts/user_epc.sh"
   end
 
   config.vm.define "ran" do |ran|
@@ -42,7 +42,7 @@ Vagrant.configure("2") do |config|
     ran.vm.provider "virtualbox" do |v|
       v.name = "ran"
       v.memory = 4096
-      v.cpus = 1
+      v.cpus = 2
     end
 
     ran.vm.network "private_network", ip: "10.10.1.1", virtualbox__intnet: true
@@ -50,5 +50,21 @@ Vagrant.configure("2") do |config|
     ran.vm.provision "shell", path: "scripts/bootstrap_ran.sh"
     ran.vm.provision "shell", privileged: false, path: "scripts/user_ran.sh"
 
+  end
+
+  config.vm.define "p4ovs" do |p4ovs|
+    p4ovs.vm.box = "ubuntu/groovy64"
+
+    p4ovs.vm.disk :disk, size: "30GB", primary: true
+
+    p4ovs.vm.provider "virtualbox" do |v|
+      v.name = "p4ovs"
+      v.memory = 4096
+      v.cpus = 2
+    end
+
+    p4ovs.vm.network "private_network", ip: "10.10.1.3", virtualbox__intnet: true
+
+    p4ovs.vm.provision "shell", path: "scripts/boostrap_p4ovs.sh"
   end
 end
