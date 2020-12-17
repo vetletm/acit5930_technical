@@ -59,19 +59,19 @@ git pull origin master
 
 # HSS
 docker build --target oai-hss --tag oai-hss:production \
-               --file component/oai-hss/docker/Dockerfile.ubuntu18.04 component/oai-hss
+               --file component/oai-hss/docker/Dockerfile.ubuntu18.04 component/oai-hss/
 
 # MME
 docker build --target oai-mme --tag oai-mme:production \
-              --file component/oai-mme/docker/Dockerfile.ubuntu18.04 .
+              --file component/oai-mme/docker/Dockerfile.ubuntu18.04 component/oai-mme/
 
 # SPGW-C
 docker build --target oai-spgwc --tag oai-spgwc:production \
-               --file component/oai-spgwc/docker/Dockerfile.ubuntu18.04 .
+               --file component/oai-spgwc/docker/Dockerfile.ubuntu18.04 component/oai-spgwc/
 
 # SPGW-U
 docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production \
-               --file component/oai-spgwu-tiny/docker/Dockerfile.ubuntu18.04 .
+               --file component/oai-spgwu-tiny/docker/Dockerfile.ubuntu18.04 component/oai-spgwu-tiny/
 
 # Clean up to save space
 docker image prune --force

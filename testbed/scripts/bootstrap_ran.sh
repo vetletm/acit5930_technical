@@ -11,4 +11,7 @@ echo "netmon ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99_netmon
 chmod 440 /etc/sudoers.d/99_netmon
 usermod -aG vboxsf netmon
 
+mkdir /home/netmon/src
+chown -R netmon:netmon /home/netmon/src
+
 ip route add 192.168.61.0/24 via 10.10.1.2
