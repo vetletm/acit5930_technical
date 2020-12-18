@@ -31,7 +31,7 @@ Vagrant.configure("2") do |config|
 
     # Install required packages and build binaries
     epc.vm.provision "shell", path: "scripts/bootstrap_epc.sh"
-    # NOTE: Deprecated provision-statement, do not use, should be removed later. 
+    # NOTE: Deprecated provision-statement, do not use, should be removed later.
     # epc.vm.provision "shell", privileged: false, path: "scripts/user_epc.sh"
   end
 
