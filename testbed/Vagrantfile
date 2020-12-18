@@ -31,7 +31,8 @@ Vagrant.configure("2") do |config|
 
     # Install required packages and build binaries
     epc.vm.provision "shell", path: "scripts/bootstrap_epc.sh"
-    epc.vm.provision "shell", privileged: false, path: "scripts/user_epc.sh"
+    # NOTE: Deprecated provision-statement, do not use, should be removed later. 
+    # epc.vm.provision "shell", privileged: false, path: "scripts/user_epc.sh"
   end
 
   config.vm.define "ran" do |ran|
@@ -84,7 +85,7 @@ Vagrant.configure("2") do |config|
     # Gonna use as switch to connect EPC and RAN
     p4ovs.vm.network "private_network", ip: "10.10.1.3", virtualbox__intnet: true
 
-    # Compile P4-OvS 
+    # Compile P4-OvS
     p4ovs.vm.provision "shell", path: "scripts/bootstrap_p4ovs.sh"
   end
 end

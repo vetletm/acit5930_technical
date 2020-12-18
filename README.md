@@ -8,3 +8,10 @@ You will need the disksize plugin:
 ```
 vagrant plugin install vagrant-disksize
 ```
+
+Move into the testbed directory and start vagrant
+
+```
+cd testbed/
+vagrant up
+```
