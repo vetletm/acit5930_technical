@@ -13,6 +13,7 @@
 # => Implement P4 to test in-band network monitoring
 
 Vagrant.configure("2") do |config|
+  # Dedicated VM for the Packet Core
   config.vm.define "epc" do |epc|
     # Using Ubuntu 18.04 Bionic Beaver
     epc.vm.box = "ubuntu/bionic64"
@@ -35,6 +36,7 @@ Vagrant.configure("2") do |config|
     # epc.vm.provision "shell", privileged: false, path: "scripts/user_epc.sh"
   end
 
+  # Dedicated VM for eNB and UE
   config.vm.define "ran" do |ran|
     # Using Ubuntu 18.04 Bionic Beaver
     ran.vm.box = "ubuntu/bionic64"
@@ -68,6 +70,7 @@ Vagrant.configure("2") do |config|
 
   end
 
+  # Standalone VM for P4-OvS
   config.vm.define "p4ovs" do |p4ovs|
     # Using Ubuntu 20.10 Groovy Gorilla
     p4ovs.vm.box = "ubuntu/groovy64"
@@ -86,7 +89,24 @@ Vagrant.configure("2") do |config|
     p4ovs.vm.network "private_network", ip: "10.10.1.3", virtualbox__intnet: true
 
     # Compile P4-OvS
-    # p4ovs.vm.provision "shell", path: "scripts/bootstrap_p4ovs.sh"
-    p4ovs.vm.provision "shell", path: "archived_scripts/install-p4dev-v2.sh"
+    p4ovs.vm.provision "shell", path: "scripts/bootstrap_p4ovs.sh"
+    # p4ovs.vm.provision "shell", path: "archived_scripts/install-p4dev-v2.sh"
+  end
+
+  # Dedicated compiler for P4
+  config.vm.define "p4compiler" do |p4compiler|
+    p4compiler.vm.box = "ubuntu/bionic64"
+
+    p4compiler.disksize.size = '30GB'
+
+    p4compiler.vm.provider "virtualbox" do |v|
+      v.name = "p4compiler"
+      v.memory = "4096"
+      v.cpus = 2
+    end
+
+    p4compiler.vm.network "private_network", ip: "10.10.1.4", virtualbox__intnet: true
+
+    p4compiler.vm.provision "shell", path: "scripts/bootstrap_p4compiler.sh"
   end
 end
