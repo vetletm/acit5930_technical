@@ -38,26 +38,27 @@ sudo make install
 cd "$BASE_DIR"
 git clone https://github.com/protocolbuffers/protobuf.git
 cd protobuf
-git checkout v3.2.1
+git checkout v3.2.0
 git submodule update --init --recursive
 ./autogen.sh
 ./configure --prefix=/usr
 make
-make check
+# Make check takes a lot of time, if the build is stable, consider skipping this step
+# make check
 make install
 ldconfig
-
-# == P4 Compiler ==
-cd "$BASE_DIR"
-git clone --recursive https://github.com/p4lang/p4c.git
-cd p4c
-mkdir build
-cd build
-# Change installation prefix and disable BMV2 related features of the P4 compiler
-cmake .. -DENABLE_BMV2=OFF -DCMAKE_INSTALL_PREFIX=/usr
-# make -j2
-# make -j2 check
-# sudo make install
+#
+# # == P4 Compiler ==
+# cd "$BASE_DIR"
+# git clone --recursive https://github.com/p4lang/p4c.git
+# cd p4c
+# mkdir build
+# cd build
+# # Change installation prefix and disable BMV2 related features of the P4 compiler
+# cmake .. -DENABLE_BMV2=OFF -DCMAKE_INSTALL_PREFIX=/usr
+# # make -j2
+# # make -j2 check
+# # sudo make install
 
 # == PI ==
 sudo apt install -y libnanomsg-dev \
