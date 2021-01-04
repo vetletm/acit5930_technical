@@ -18,4 +18,4 @@ cd p4-guide
 git checkout alternate-install-for-p4ovs
 cd "$BASE_DIR"
 
-./p4-guide/bin/install-p4dev-v4.sh |& tee log.txt
+./p4-guide/bin/install-p4dev-with-p4ovs.sh |& tee log.txt
