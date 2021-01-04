@@ -13,6 +13,9 @@ BASE_DIR="/home/netmon/src"
 apt-get update
 
 cd "$BASE_DIR"
-git clone https://github.com/jafingerhut/p4-guide.git
+git clone https://github.com/vetletm/p4-guide.git
+cd p4-guide
+git checkout alternate-install-for-p4ovs
+cd "$BASE_DIR"
 
 ./p4-guide/bin/install-p4dev-v4.sh |& tee log.txt

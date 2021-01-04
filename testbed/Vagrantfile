@@ -95,7 +95,7 @@ Vagrant.configure("2") do |config|
 
   # Dedicated compiler for P4
   config.vm.define "p4compiler" do |p4compiler|
-    p4compiler.vm.box = "ubuntu/bionic64"
+    p4compiler.vm.box = "ubuntu/focal64"
 
     p4compiler.disksize.size = '30GB'
 
@@ -108,5 +108,6 @@ Vagrant.configure("2") do |config|
     p4compiler.vm.network "private_network", ip: "10.10.1.4", virtualbox__intnet: true
 
     p4compiler.vm.provision "shell", path: "scripts/bootstrap_p4compiler.sh"
+    # p4compiler.vm.provision "shell", path: "scripts/install_p4ovs.sh"
   end
 end
