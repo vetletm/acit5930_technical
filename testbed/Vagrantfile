@@ -16,7 +16,7 @@ Vagrant.configure("2") do |config|
   # Dedicated VM for the Packet Core
   config.vm.define "epc" do |epc|
     # Using Ubuntu 18.04 Bionic Beaver
-    epc.vm.box = "ubuntu/bionic64"
+    epc.vm.box = "ubuntu/focal64"
 
     # Using vagrant-disksize plugin
     epc.disksize.size = '50GB'
@@ -32,8 +32,8 @@ Vagrant.configure("2") do |config|
 
     # Install required packages and build binaries
     epc.vm.provision "shell", path: "scripts/bootstrap_epc.sh"
-    # NOTE: Deprecated provision-statement, do not use, should be removed later.
-    # epc.vm.provision "shell", privileged: false, path: "scripts/user_epc.sh"
+    # Install P4-OvS
+    epc.vm.provision "shell", path: "scripts/install_p4ovs.sh"
   end
 
   # Dedicated VM for eNB and UE
@@ -70,7 +70,8 @@ Vagrant.configure("2") do |config|
 
   end
 
-  # Standalone VM for P4-OvS
+  # NOTE: This machine only contains P4-OvS runtime, not a P4-compiler, to save space.
+  #     - For P4-OvS and P4-Compiler on the same machine, use the "p4compiler" machine
   config.vm.define "p4ovs" do |p4ovs|
     # Using Ubuntu 20.10 Groovy Gorilla
     p4ovs.vm.box = "ubuntu/groovy64"
@@ -93,7 +94,7 @@ Vagrant.configure("2") do |config|
     # p4ovs.vm.provision "shell", path: "archived_scripts/install-p4dev-v2.sh"
   end
 
-  # Dedicated compiler for P4
+  # P4-Compiler and P4-OvS on the same machine
   config.vm.define "p4compiler" do |p4compiler|
     p4compiler.vm.box = "ubuntu/focal64"
 
@@ -108,6 +109,5 @@ Vagrant.configure("2") do |config|
     p4compiler.vm.network "private_network", ip: "10.10.1.4", virtualbox__intnet: true
 
     p4compiler.vm.provision "shell", path: "scripts/bootstrap_p4compiler.sh"
-    # p4compiler.vm.provision "shell", path: "scripts/install_p4ovs.sh"
   end
 end

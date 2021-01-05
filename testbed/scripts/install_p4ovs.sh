@@ -20,18 +20,18 @@ git checkout v0.13.0
 make
 sudo make install
 
-# # == PI ==
-# sudo apt install -y libnanomsg-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc libgrpc++-dev libgrpc-dev libgc-dev
-#
-# cd "$BASE_DIR"
-# git clone https://github.com/osinstom/PI   # *NOT* upstream: https://github.com/p4lang/PI
-# cd PI
-# git checkout p4-ovs
-# git submodule update --init
-# ./autogen.sh
-# ./configure --prefix=/usr --with-proto --with-fe-cpp --with-cli --with-internal-rpc --with-gnu-ld
-# make
-# make install
+# == PI ==
+sudo apt install -y libnanomsg-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc libgrpc++-dev libgrpc-dev libgc-dev
+
+cd "$BASE_DIR"
+git clone https://github.com/osinstom/PI   # *NOT* upstream: https://github.com/p4lang/PI
+cd PI
+git checkout p4-ovs
+git submodule update --init
+./autogen.sh
+./configure --prefix=/usr --with-proto --with-fe-cpp --with-cli --with-internal-rpc --with-gnu-ld
+make
+sudo make install
 
 # == P4-OvS ==
 cd "$BASE_DIR"
@@ -42,7 +42,4 @@ git checkout dreibh/build-fix-16Dec2020
 ./boot.sh
 ./configure
 make
-# make install
-
-# Set permissions for netmon user
-chown -R netmon:netmon /home/netmon/
+sudo make install
