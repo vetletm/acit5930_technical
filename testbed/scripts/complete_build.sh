@@ -11,27 +11,37 @@ sudo sysctl net.ipv4.conf.all.forwarding=1
 sudo ip route add 192.168.61.0/24 dev br-cfdfe60e5cdc
 
 
-# Build the necessary containers using the provided configuration scripts
+# HSS
 docker build --target oai-hss --tag oai-hss:production \
-               --file component/oai-hss/ci-scripts/Dockerfile.ubuntu18.04 .
+               --file component/oai-hss/docker/Dockerfile.ubuntu18.04 component/oai-hss/
 docker build --target oai-mme --tag oai-mme:production \
-              --file component/oai-mme/ci-scripts/Dockerfile.ubuntu18.04 .
+              --file component/oai-mme/docker/Dockerfile.ubuntu18.04 component/oai-mme/
 docker build --target oai-spgwc --tag oai-spgwc:production \
-               --file component/oai-spgwc/ci-scripts/Dockerfile.ubuntu18.04 .
+               --file component/oai-spgwc/docker/Dockerfile.ubuntu18.04 component/oai-spgwc/
 docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production \
-               --file component/oai-spgwu-tiny/ci-scripts/Dockerfile.ubuntu18.04 .
+               --file component/oai-spgwu-tiny/docker/Dockerfile.ubuntu18.04 component/oai-spgwu-tiny/
 
 # Run and connect the containers to the common network "prod-oai-public-net"
 docker run --name prod-cassandra -d -e CASSANDRA_CLUSTER_NAME="OAI HSS Cluster" \
-            -e CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch cassandra:2.1
-docker run --privileged --name prod-oai-hss -d oai-hss:production /bin/bash -c "sleep infinity"
+             -e CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch cassandra:2.1
+docker run --privileged --name prod-oai-hss -d --entrypoint /bin/bash oai-hss:production -c "sleep infinity"
 docker network connect prod-oai-public-net prod-oai-hss
 docker run --privileged --name prod-oai-mme --network prod-oai-public-net \
-            -d oai-mme:production /bin/bash -c "sleep infinity"
+             -d --entrypoint /bin/bash oai-mme:production -c "sleep infinity"
 docker run --privileged --name prod-oai-spgwc --network prod-oai-public-net \
-            -d oai-spgwc:production /bin/bash -c "sleep infinity"
+             -d --entrypoint /bin/bash oai-spgwc:production -c "sleep infinity"
 docker run --privileged --name prod-oai-spgwu-tiny --network prod-oai-public-net \
-            -d oai-spgwu-tiny:production /bin/bash -c "sleep infinity"
+             -d --entrypoint /bin/bash oai-spgwu-tiny:production -c "sleep infinity"
+
+# Steps to add:
+#   - Remove docker bridge from script
+#   - Add each container to the openvswitch using:
+#       sudo ovs−docker add−port ovs−br0 eth1 prod-oai-hss −−ipaddress=192.168.61.2/26
+#       sudo ovs−docker add−port ovs−br0 eth2 prod-oai-mme −−ipaddress=192.168.61.3/26
+#       sudo ovs−docker add−port ovs−br0 eth3 prod-oai-spgwc −−ipaddress=192.168.61.4/26
+#       sudo ovs−docker add−port ovs−br0 eth4 prod-oai-spgwu-tiny −ipaddress=192.168.61.5/26
+#
+#   When that is done, we can begin experimenting with P4-OvS to see if we get anything useful from monitoring
 
 # Configure Cassandra
 docker cp component/oai-hss/src/hss_rel14/db/oai_db.cql prod-cassandra:/home
@@ -88,3 +98,14 @@ sleep 2
 docker exec -d prod-oai-spgwc /bin/bash -c "nohup ./bin/oai_spgwc -o -c ./etc/spgw_c.conf > spgwc_check_run.log 2>&1"
 sleep 2
 docker exec -d prod-oai-spgwu-tiny /bin/bash -c "nohup ./bin/oai_spgwu -o -c ./etc/spgw_u.conf > spgwu_check_run.log 2>&1"
+
+# Stopping each function in turn
+docker exec -it prod-oai-hss /bin/bash -c "killall --signal SIGINT oai_hss tshark tcpdump"
+docker exec -it prod-oai-mme /bin/bash -c "killall --signal SIGINT oai_mme tshark tcpdump"
+docker exec -it prod-oai-spgwc /bin/bash -c "killall --signal SIGINT oai_spgwc tshark tcpdump"
+docker exec -it prod-oai-spgwu-tiny /bin/bash -c "killall --signal SIGINT oai_spgwu tshark tcpdump"
+sleep 10
+docker exec -it prod-oai-hss /bin/bash -c "killall --signal SIGKILL oai_hss tshark tcpdump"
+docker exec -it prod-oai-mme /bin/bash -c "killall --signal SIGKILL oai_mme tshark tcpdump"
+docker exec -it prod-oai-spgwc /bin/bash -c "killall --signal SIGKILL oai_spgwc tshark tcpdump"
+docker exec -it prod-oai-spgwu-tiny /bin/bash -c "killall --signal SIGKILL oai_spgwu tshark tcpdump"

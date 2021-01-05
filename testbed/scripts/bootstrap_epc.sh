@@ -36,6 +36,9 @@ chmod 440 /etc/sudoers.d/99_netmon
 usermod -aG vboxsf netmon
 usermod -aG docker netmon
 
+# Disable Multipathd as it throws errors and is not necessary for this setup
+systemctl disable multipathd.service
+
 # Prepare home-directory
 mkdir /home/netmon/src
 chown -R netmon:netmon /home/netmon/src
@@ -52,8 +55,8 @@ BASE_DIR="/home/netmon/src"
 
 git clone https://github.com/OPENAIRINTERFACE/openair-epc-fed.git "$BASE_DIR/openair-epc-fed"
 cd "$BASE_DIR"/openair-epc-fed
-git checkout master
-git pull origin master
+git checkout 2020.w44
+git pull origin 2020.w44
 ./scripts/syncComponents.sh
 
 
@@ -78,3 +81,21 @@ docker image prune --force
 
 # Add docker bridge
 docker network create --attachable --subnet 192.168.61.0/26 --ip-range 192.168.61.0/26 prod-oai-public-net
+
+# Start each component container without configuring, that will have to be done by hand for now
+docker run --name prod-cassandra -d -e CASSANDRA_CLUSTER_NAME="OAI HSS Cluster" \
+             -e CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch cassandra:2.1
+
+docker run --privileged --name prod-oai-hss -d --entrypoint /bin/bash oai-hss:production -c "sleep infinity"
+docker network connect prod-oai-public-net prod-oai-hss
+
+docker run --privileged --name prod-oai-mme --network prod-oai-public-net \
+             -d --entrypoint /bin/bash oai-mme:production -c "sleep infinity"
+
+docker run --privileged --name prod-oai-spgwc --network prod-oai-public-net \
+             -d --entrypoint /bin/bash oai-spgwc:production -c "sleep infinity"
+
+docker run --privileged --name prod-oai-spgwu-tiny --network prod-oai-public-net \
+             -d --entrypoint /bin/bash oai-spgwu-tiny:production -c "sleep infinity"
+
+chown -R netmon:netmon /home/netmon/
