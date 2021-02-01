@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+export PATH=$PATH:/usr/local/share/openvswitch/scripts
+
+# ovsdb-tool create /usr/local/etc/openvswitch/conf.db vswitchd/vswitch.ovsschema
+
+ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock \
+    --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+    --pidfile --detach --log-file
+
+ovs-vsctl init
+
+ovs-vswitchd --pidfile --detach --log-file
