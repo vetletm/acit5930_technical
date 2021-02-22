@@ -13,6 +13,19 @@
 # => Implement P4 to test in-band network monitoring
 
 Vagrant.configure("2") do |config|
+  # Dedicated VM for BMV2 + Mininet
+  config.vm.define "bmv2" do |bmv2|
+    bmv2.vm.box = 'ubuntu/bionic64'
+    bmv2.disksize.size = '50GB'
+    bmv2.vm.provider "virtualbox" do |v|
+      v.name = "bmv2"
+      v.memory = 4096
+      v.cpus = 2
+    end
+    bmv2.vm.network "private_network", ip: "10.10.1.5", virtualbox__intnet: true
+    bmv2.vm.provision "shell", path: "scripts/bootstrap_bmv2.sh"
+  end
+
   # Dedicated VM for the Packet Core
   config.vm.define "epc" do |epc|
     # Using Ubuntu 18.04 Bionic Beaver
