@@ -185,6 +185,7 @@ Fork: https://github.com/vetletm/FOP4/tree/vetletm-fix-ansible
   - **Solved**: All code must be run from the FOP4-directory context. Slightly annoying but can be fixed later.
 - **Issue**: Image/container `cassandra:2.1` is not compatible with FOP4, it's missing the necessary packages and cannot be controlled via FOP4.
   - **Possible solution**: Cassandra can be launched standalone from FOP4, all containers are still connected to a common docker network and should be able to reach each other.
+  - **Solved**: The possible solution as shown above worked like a charm.
 
 More or less full flow of setting up a host to run FOP4 and EPC:
 - Ubuntu 18.04 with at least 50GB of space (can be pruned quite heavily, given time and effort)
@@ -197,7 +198,7 @@ More or less full flow of setting up a host to run FOP4 and EPC:
 
 **Setting up docker images**:
 - Full procedure in `../p4_mininet/epc_config.sh`
-- Configuration is lost when FOP4 is stopped. All configuration and experimentation must be done after topology has been started. Remember to save pcaps and application logs before shutting down FOP4. 
+- Configuration is lost when FOP4 is stopped. All configuration and experimentation must be done after topology has been started. Remember to save pcaps and application logs before shutting down FOP4.
 
 **Configuration of services**:
 - Either use configuration scripts to config after creation of FOP4 network
@@ -210,6 +211,58 @@ More or less full flow of setting up a host to run FOP4 and EPC:
 Drawbacks of _option A_: More flexible, but requires configuration every time FOP4 network is started, it's not persistent.
 
 Drawbacks of _option B_: Not very flexible, configuration will be highly specific, changing is harder
+
+**Updating setup to use P4-switches**:
+- Flow:
+  1. Compile P4 code
+  2. Add p4-json file to the switch in the pythonscript
+  3. Populate tables using the simple_switch_CLI: `simple_switch_CLI --thrift-port $(cat /tmp/bmv2-s1-thrift-port) < command.txt`
+- **Current**: Use provided examples from FOP4-repo to test if it works as expected.
+- **Command syntax to add table entries**:
+  - `table_add ipv4_lpm ipv4_forward 192.168.61.2/32 => 00:00:00:00:00:E1 1`
+  - Explanation: `table_add TABLE_NAME ACTION_NAME PARAM => MAC_ADDR PORT_NUMBER`
+
+**Setting up BMV2 and Hosts in FOP4**:
+1. Use the included `epc_p4_topo.py` and `basic.json`. This sets up a simple topology with one switch programmed as a simple forwarder
+2. Start FOP4 with `sudo python epc_p4_topo.py`, the output will include the thrift port needed for the next step
+3. In separate terminal, connect to the BMV2 switch: `simple_switch_CLI --thrift-port=PORT_NUMBER`
+4. Add the table entries to the switch:
+  ```
+  table_add ipv4_lpm ipv4_forward 192.168.61.2/32 => 00:00:00:00:00:E1 1
+  table_add ipv4_lpm ipv4_forward 192.168.61.3/32 => 00:00:00:00:00:E2 2
+  table_add ipv4_lpm ipv4_forward 192.168.61.4/32 => 00:00:00:00:00:E3 3
+  table_add ipv4_lpm ipv4_forward 192.168.61.5/32 => 00:00:00:00:00:E4 4
+  ```
+5. On each host, add a route to `192.168.61.0/24` via the associated interface `<COMPONENT-NAME>-eth0` and manually add arp entries for each of the other hosts (the example shows the HSS with ip .2):
+  ```
+  $ sudo docker exec -ti mn.hss /bin/bash
+  # HSS
+  ip route add 192.168.61.0/24 via 192.168.61.2 dev hss-eth0
+  arp -s 192.168.61.3 00:00:00:00:00:E2
+  arp -s 192.168.61.4 00:00:00:00:00:E3
+  arp -s 192.168.61.5 00:00:00:00:00:E4
+
+  # MME
+  ip route add 192.168.61.0/24 via 192.168.61.3 dev mme-eth0
+  arp -s 192.168.61.2 00:00:00:00:00:E1
+  arp -s 192.168.61.4 00:00:00:00:00:E3
+  arp -s 192.168.61.5 00:00:00:00:00:E4
+
+  # SPGW-C
+  ip route add 192.168.61.0/24 via 192.168.61.4 dev spgw-c-eth0
+  arp -s 192.168.61.3 00:00:00:00:00:E2
+  arp -s 192.168.61.2 00:00:00:00:00:E1
+  arp -s 192.168.61.5 00:00:00:00:00:E4
+
+  # SPGW-U
+  ip route add 192.168.61.0/24 via 192.168.61.5 dev spgw-u-eth0
+  arp -s 192.168.61.3 00:00:00:00:00:E2
+  arp -s 192.168.61.4 00:00:00:00:00:E3
+  arp -s 192.168.61.2 00:00:00:00:00:E1
+  ```
+6. At this point, you should have full IPv4 connectivity between all hosts.
+7. Verifying with ping from `hss` to `mme` shows basic connectivity
+8. Testing with iperf from `hss` to `mme` shows bad performance, but connectivity.
 
 ### Future work
 - Use FOP4 to establish pipelines to test P4-code before rolling it out to production

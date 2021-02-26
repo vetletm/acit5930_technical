@@ -1,6 +1,6 @@
 # Contains all the updated commands to configure EPC running in FOP4 (Mininet)
 # ---- !!! NOTE !!! ----
-# This is not meant to be run, you will have to run each command separately in the same terminal. I might update this to work as a script instead of a todo-list
+# This is not meant to be run as an automated script, you will have to run each command separately in the same terminal. I might update this to work as a script instead of a todo-list
 
 # For the EPC components, we're using slightly customized forks to allow them to be controlled by FOP4
 # HSS
@@ -44,13 +44,13 @@ docker run --name prod-cassandra -d -e CASSANDRA_CLUSTER_NAME="OAI HSS Cluster" 
 sudo python epc_topo.py
 # This will start the topology, but all of the services are not configured and not running.
 
-# From openair-epc-fed directory:
-# Configure Cassandra
-docker cp component/oai-hss/src/hss_rel14/db/oai_db.cql prod-cassandra:/home
+# Configure Cassandra (do this from openair-hss directory)
+docker cp openair-hss/src/hss_rel14/db/oai_db.cql prod-cassandra:/home
 docker exec -it prod-cassandra /bin/bash -c "nodetool status"
 Cassandra_IP=`docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-cassandra`
 docker exec -it prod-cassandra /bin/bash -c "cqlsh --file /home/oai_db.cql ${Cassandra_IP}"
 
+# From openair-epc-fed directory:
 # Configure HSS with the necessary parameters
 HSS_IP='192.168.61.2'
 python3 component/oai-hss/ci-scripts/generateConfigFiles.py --kind=HSS --cassandra=${Cassandra_IP} \
