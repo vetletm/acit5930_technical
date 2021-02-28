@@ -1,2 +1,4 @@
 ubuntu-bionic-*
 */.vagrant/
+*.zip
+mininet_test/
