@@ -60,8 +60,8 @@ docker cp ./hss-cfg.sh prod-oai-hss:/openair-hss/scripts
 docker exec -it prod-oai-hss /bin/bash -c "cd /openair-hss/scripts && chmod 777 hss-cfg.sh && ./hss-cfg.sh"
 
 # Configure the MME
-MME_IP=`docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-oai-mme`
-SPGW0_IP=`docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-oai-spgwc`
+MME_IP='192.168.61.3'
+SPGW0_IP='192.168.61.4'
 python3 component/oai-mme/ci-scripts/generateConfigFiles.py --kind=MME \
           --hss_s6a=${HSS_IP} --mme_s6a=${MME_IP} \
           --mme_s1c_IP=${MME_IP} --mme_s1c_name=eth0 \
@@ -109,3 +109,24 @@ docker exec -it prod-oai-hss /bin/bash -c "killall --signal SIGKILL oai_hss tsha
 docker exec -it prod-oai-mme /bin/bash -c "killall --signal SIGKILL oai_mme tshark tcpdump"
 docker exec -it prod-oai-spgwc /bin/bash -c "killall --signal SIGKILL oai_spgwc tshark tcpdump"
 docker exec -it prod-oai-spgwu-tiny /bin/bash -c "killall --signal SIGKILL oai_spgwu tshark tcpdump"
+
+# Recover logs:
+rm -Rf archives
+mkdir -p archives/oai-hss-cfg archives/oai-mme-cfg archives/oai-spgwc-cfg archives/oai-spgwu-cfg
+
+docker cp prod-oai-hss:/openair-hss/etc/. archives/oai-hss-cfg
+docker cp prod-oai-mme:/openair-mme/etc/. archives/oai-mme-cfg
+docker cp prod-oai-spgwc:/openair-spgwc/etc/. archives/oai-spgwc-cfg
+docker cp prod-oai-spgwu-tiny:/openair-spgwu-tiny/etc/. archives/oai-spgwu-cfg
+
+docker cp prod-oai-hss:/openair-hss/hss_check_run.log archives
+docker cp prod-oai-mme:/openair-mme/mme_check_run.log archives
+docker cp prod-oai-spgwc:/openair-spgwc/spgwc_check_run.log archives
+docker cp prod-oai-spgwu-tiny:/openair-spgwu-tiny/spgwu_check_run.log archives
+
+docker cp prod-oai-hss:/tmp/hss_check_run.pcap archives
+docker cp prod-oai-mme:/tmp/mme_check_run.pcap archives
+docker cp prod-oai-spgwc:/tmp/spgwc_check_run.pcap archives
+docker cp prod-oai-spgwu-tiny:/tmp/spgwu_check_run.pcap archives
+
+zip -r -qq "$(date '+%Y%m%d-%H%M%S')-archives".zip archives

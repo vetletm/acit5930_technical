@@ -2,7 +2,7 @@
 
 BASE_DIR="/home/netmon/src"
 
-apt-get update
+sudo apt-get update
 
 sudo apt-get install -y automake cmake libjudy-dev libgmp-dev libpcap-dev libboost-all-dev libevent-dev libtool flex bison pkg-config g++ libssl-dev libnanomsg-dev libjudy-dev libreadline-dev valgrind libtool-bin libboost-dev libboost-system-dev libboost-thread-dev clang-6.0
 
