@@ -1,0 +1,2 @@
+table_add ipv4_lpm ipv4_forward 192.168.62.2/32 => 00:00:00:00:00:F2 1
+table_add ipv4_lpm ipv4_forward 192.168.62.3/32 => 00:00:00:00:00:F3 2
