@@ -223,46 +223,57 @@ Drawbacks of _option B_: Not very flexible, configuration will be highly specifi
   - Explanation: `table_add TABLE_NAME ACTION_NAME PARAM => MAC_ADDR PORT_NUMBER`
 
 **Setting up BMV2 and Hosts in FOP4**:
-1. Use the included `epc_p4_topo.py` and `basic.json`. This sets up a simple topology with one switch programmed as a simple forwarder
-2. Start FOP4 with `sudo python epc_p4_topo.py`, the output will include the thrift port needed for the next step
-3. In separate terminal, connect to the BMV2 switch: `simple_switch_CLI --thrift-port=PORT_NUMBER`
-4. Add the table entries to the switch:
-  ```
-  table_add ipv4_lpm ipv4_forward 192.168.61.2/32 => 00:00:00:00:00:E1 1
-  table_add ipv4_lpm ipv4_forward 192.168.61.3/32 => 00:00:00:00:00:E2 2
-  table_add ipv4_lpm ipv4_forward 192.168.61.4/32 => 00:00:00:00:00:E3 3
-  table_add ipv4_lpm ipv4_forward 192.168.61.5/32 => 00:00:00:00:00:E4 4
-  ```
-5. On each host, add a route to `192.168.61.0/24` via the associated interface `<COMPONENT-NAME>-eth0` and manually add arp entries for each of the other hosts (the example shows the HSS with ip .2):
-  ```
-  $ sudo docker exec -ti mn.hss /bin/bash
-  # HSS
-  ip route add 192.168.61.0/24 via 192.168.61.2 dev hss-eth0
-  arp -s 192.168.61.3 00:00:00:00:00:E2
-  arp -s 192.168.61.4 00:00:00:00:00:E3
-  arp -s 192.168.61.5 00:00:00:00:00:E4
+1. In the folder named `epc_p4_topo`, there are four files. `basic.p4`, `epc_p4_topo.py`, `s1_commands.txt` and `s2_commands.txt`
+2. Compile the p4-code: `p4c-bm2-ss --arch v1model -o basic.json --p4runtime-file basic.p4info --p4runtime-format text basic.p4`
+3. Copy `basic.json`, `epc_p4_topo.py`, `s1_commands.txt` and `s2_commands.txt` to the FOP4 root folder
+4. Start the topology with `sudo python epc_p4_topo.py`. This will start the network and configure the switches
+5. Verify connectivity with `pingall`
 
-  # MME
-  ip route add 192.168.61.0/24 via 192.168.61.3 dev mme-eth0
-  arp -s 192.168.61.2 00:00:00:00:00:E1
-  arp -s 192.168.61.4 00:00:00:00:00:E3
-  arp -s 192.168.61.5 00:00:00:00:00:E4
+**Troubleshooting RAN**:
+- `sudo tshark -i any -f sctp -n`
+- `sudo apt install -y apt install -y linux-image-5.4.0-66-lowlatency linux-headers-5.4.0-66-lowlatency`
+- `git checkout v1.2.2`
+- ```
+cd openairinterface5g/cmake_targets/lte_build_oai/build
+mv .u* ../../
+cd openairinterface5g/targets/bin
+cp usim  ../../cmake_targets
+cp nvram  ../../cmake_targets
+```
 
-  # SPGW-C
-  ip route add 192.168.61.0/24 via 192.168.61.4 dev spgw-c-eth0
-  arp -s 192.168.61.3 00:00:00:00:00:E2
-  arp -s 192.168.61.2 00:00:00:00:00:E1
-  arp -s 192.168.61.5 00:00:00:00:00:E4
+**Starting eNB and UE**:
+- Set up localhost interface: `sudo ifconfig lo: 127.0.0.2 netmask 255.0.0.0 up`
+- eNB: `sudo -E ./lte_build_oai/build/lte-softmodem -O ../ci-scripts/conf_files/rcc.band7.tm1.nfapi.conf > enb.log 2>&1`
+- UE: `sudo -E ./lte_build_oai/build/lte-uesoftmodem -O ../ci-scripts/conf_files/ue.nfapi.conf --L2-emul 3 --num-ues 1 > ue.log 2>&1`
 
-  # SPGW-U
-  ip route add 192.168.61.0/24 via 192.168.61.5 dev spgw-u-eth0
-  arp -s 192.168.61.3 00:00:00:00:00:E2
-  arp -s 192.168.61.4 00:00:00:00:00:E3
-  arp -s 192.168.61.2 00:00:00:00:00:E1
-  ```
-6. At this point, you should have full IPv4 connectivity between all hosts.
-7. Verifying with ping from `hss` to `mme` shows basic connectivity
-8. Testing with iperf from `hss` to `mme` shows bad performance, but connectivity.
+**Saving logs and pcaps from RAN**:
+- ```
+sudo rm -rf archives
+sudo mkdir archives
+sudo cp openairinterface5g/cmake_targets/*.log archives/
+sudo cp openairinterface5g/ci-scripts/conf_files/rcc.band7.tm1.nfapi.conf archives/
+sudo cp openairinterface5g/ci-scripts/conf_files/ue.nfapi.conf archives/
+sudo cp openairinterface5g/openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf archives/
+sudo cp /tmp/ran_check_run.pcap archives/
+sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-ran-archives".zip archives
+
+```
+**Changing NAT subnet for vagrant**:
+- https://stackoverflow.com/questions/35208188/how-can-i-define-network-settings-with-vagrant/39081518
+- ```ruby
+enb.vm.provider "virtualbox" do |v|
+  v.name = "enb"
+  v.memory = 4096
+  v.cpus = 2
+  # The following line is the workaround to change NAT subnet
+  v.customize ["modifyvm", :id, "--natnet1", "192.168.72.0/24"]
+end
+```
 
 ### Future work
 - Use FOP4 to establish pipelines to test P4-code before rolling it out to production
+- Integrate P4-OvS in Containernet
+
+p4c-bm2-ss --arch v1model -o basic.json \
+  --p4runtime-file basic.p4info --p4runtime-format text \
+  basic.p4
