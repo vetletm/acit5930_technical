@@ -76,8 +76,11 @@ Things to note:
     sudo -E docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production \
             --file openair-spgwu-tiny/docker/Dockerfile.ubuntu18.04 openair-spgwu-tiny/
   ```
-  - This results in a large number of containers used throughout the build-process. Prune these: `sudo docker image prune --force`
-  - Build the docker image required for `iperf_dst` and `forwarder` (you will need to create the Dockerfile manually for the time being, put this in `~/src/openair-components`):
+  - This results in a large number of containers used throughout the build-process. Prune these:
+    ```shell
+      sudo docker image prune --force
+    ```
+  - Build the docker image required for `iperf_dst` and `forwarder` (you will need to create the Dockerfile manually for the time being, put this in `~/src/openair-components`), the Dockerfile can be found in `acit5930_technical/p4_mininet/epc_p4_topo/`:
     ```shell
       sudo docker build --tag forwarder:1804 --file Dockerfile.testbed .
       sudo docker build --tag iperf_dst:1804 --file Dockerfile.testbed .

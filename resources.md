@@ -230,10 +230,11 @@ Drawbacks of _option B_: Not very flexible, configuration will be highly specifi
 5. Verify connectivity with `pingall`
 
 **Add forwarding and routing**:
-- Forwarding: ```
-  sudo iptables -P FORWARD ACCEPT
-  sudo sysctl net.ipv4.conf.all.forwarding=1
-```
+- Forwarding:
+  ```shell
+    sudo iptables -P FORWARD ACCEPT
+    sudo sysctl net.ipv4.conf.all.forwarding=1
+  ```
 - Routing:
   - EPC: `sudo ip route add 192.168.61.0/24 via 172.17.0.1`
   - RAN: `sudo ip route add 192.168.61.0/24 via 10.10.1.5`
@@ -244,13 +245,13 @@ Drawbacks of _option B_: Not very flexible, configuration will be highly specifi
 - `sudo apt install -y apt install -y linux-image-5.4.0-66-lowlatency linux-headers-5.4.0-66-lowlatency`
 - `git checkout v1.2.2`
 - Move generated sim-card data to the appropriate directory:
-```
-cd openairinterface5g/cmake_targets/lte_build_oai/build
-mv .u* ../../
-cd openairinterface5g/targets/bin
-cp usim  ../../cmake_targets
-cp nvram  ../../cmake_targets
-```
+  ```shell
+    cd openairinterface5g/cmake_targets/lte_build_oai/build
+    mv .u* ../../
+    cd openairinterface5g/targets/bin
+    cp usim  ../../cmake_targets
+    cp nvram  ../../cmake_targets
+  ```
 
 **Starting eNB and UE with L2 NFAPI**:
 - Set up localhost interface: `sudo ifconfig lo: 127.0.0.2 netmask 255.0.0.0 up`
@@ -268,34 +269,34 @@ cp nvram  ../../cmake_targets
 - UE: `TCPBRIDGE=10.10.1.2 sudo -E ./lte_build_oai/build/lte-uesoftmodem -C 2680000000 -r 25 --ue-rxgain 140 --basicsim 2>&1 |tee ue.log`
 
 **Saving logs and pcaps from RAN**:
-```
-# ON THE ENB VM:
-sudo rm -rf eNB
-sudo mkdir eNB
-# eNB:
-sudo cp enb_folder/cmake_targets/*.log eNB/
-sudo cp enb_folder/ci-scripts/conf_files/lte-fdd-basic-sim.conf eNB/
-# sudo cp ue_folder/ci-scripts/conf_files/ue.nfapi.conf RAN/
+```shell
+  # ON THE ENB VM:
+  sudo rm -rf eNB
+  sudo mkdir eNB
+  # eNB:
+  sudo cp enb_folder/cmake_targets/*.log eNB/
+  sudo cp enb_folder/ci-scripts/conf_files/lte-fdd-basic-sim.conf eNB/
+  # sudo cp ue_folder/ci-scripts/conf_files/ue.nfapi.conf RAN/
 
-sudo cp /tmp/enb_check_run.pcap RAN/
-sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-ran-archives".zip RAN
+  sudo cp /tmp/enb_check_run.pcap RAN/
+  sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-ran-archives".zip RAN
 
-# ON THE UE VM:
-sudo rm -rf UE
-sudo mkdir UE
-sudo cp ue_folder/cmake_targets/*.log UE/
-sudo cp ue_folder/openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf UE/
+  # ON THE UE VM:
+  sudo rm -rf UE
+  sudo mkdir UE
+  sudo cp ue_folder/cmake_targets/*.log UE/
+  sudo cp ue_folder/openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf UE/
 ```
 **Changing NAT subnet for vagrant**:
 - https://stackoverflow.com/questions/35208188/how-can-i-define-network-settings-with-vagrant/39081518
-- ```ruby
-enb.vm.provider "virtualbox" do |v|
-  v.name = "enb"
-  v.memory = 4096
-  v.cpus = 2
-  # The following line is the workaround to change NAT subnet
-  v.customize ["modifyvm", :id, "--natnet1", "192.168.72.0/24"]
-end
+```ruby
+  enb.vm.provider "virtualbox" do |v|
+    v.name = "enb"
+    v.memory = 4096
+    v.cpus = 2
+    # The following line is the workaround to change NAT subnet
+    v.customize ["modifyvm", :id, "--natnet1", "192.168.72.0/24"]
+  end
 ```
 
 ### EPC Setup:
@@ -319,69 +320,69 @@ end
 - Exit one of the terminals created above, but not the one running the topology-script.
 - Navigate to `/home/netmon/src/openair-components`
 - Follow these instructions:
-```shell
-  # Run and configure Cassandra:
-  sudo docker run --name prod-cassandra -d -e CASSANDRA_CLUSTER_NAME="OAI HSS Cluster" \
-               -e CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch cassandra:2.1
-  sudo docker cp openair-hss/src/hss_rel14/db/oai_db.cql prod-cassandra:/home
-  sudo docker exec -it prod-cassandra /bin/bash -c "nodetool status"
-  Cassandra_IP=`sudo docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-cassandra`
-  sudo docker exec -it prod-cassandra /bin/bash -c "cqlsh --file /home/oai_db.cql ${Cassandra_IP}"
+  ```shell
+    # Run and configure Cassandra:
+    sudo docker run --name prod-cassandra -d -e CASSANDRA_CLUSTER_NAME="OAI HSS Cluster" \
+                 -e CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch cassandra:2.1
+    sudo docker cp openair-hss/src/hss_rel14/db/oai_db.cql prod-cassandra:/home
+    sudo docker exec -it prod-cassandra /bin/bash -c "nodetool status"
+    Cassandra_IP=`sudo docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-cassandra`
+    sudo docker exec -it prod-cassandra /bin/bash -c "cqlsh --file /home/oai_db.cql ${Cassandra_IP}"
 
-  # Set ENV for EPC IP addresses (these are statically assigned in the topology-script):
-  HSS_IP='192.168.61.2'
-  MME_IP='192.168.61.3'
-  SPGW0_IP='192.168.61.4'
+    # Set ENV for EPC IP addresses (these are statically assigned in the topology-script):
+    HSS_IP='192.168.61.2'
+    MME_IP='192.168.61.3'
+    SPGW0_IP='192.168.61.4'
 
-  # Generate configuration files for the EPC components:
-  python3 openair-hss/ci-scripts/generateConfigFiles.py --kind=HSS --cassandra=${Cassandra_IP} \
-            --hss_s6a=${HSS_IP} --apn1=apn1.simula.nornet --apn2=apn2.simula.nornet \
-            --users=200 --imsi=242881234500001 \
-            --ltek=449C4B91AEACD0ACE182CF3A5A72BFA1 --op=1006020F0A478BF6B699F15C062E42B3 \
-            --nb_mmes=1 --from_docker_file
+    # Generate configuration files for the EPC components:
+    python3 openair-hss/ci-scripts/generateConfigFiles.py --kind=HSS --cassandra=${Cassandra_IP} \
+              --hss_s6a=${HSS_IP} --apn1=apn1.simula.nornet --apn2=apn2.simula.nornet \
+              --users=200 --imsi=242881234500001 \
+              --ltek=449C4B91AEACD0ACE182CF3A5A72BFA1 --op=1006020F0A478BF6B699F15C062E42B3 \
+              --nb_mmes=1 --from_docker_file
 
-  python3 openair-mme/ci-scripts/generateConfigFiles.py --kind=MME \
-            --hss_s6a=${HSS_IP} --mme_s6a=${MME_IP} \
-            --mme_s1c_IP=${MME_IP} --mme_s1c_name=mme-eth0 \
-            --mme_s10_IP=${MME_IP} --mme_s10_name=mme-eth0 \
-            --mme_s11_IP=${MME_IP} --mme_s11_name=mme-eth0 --spgwc0_s11_IP=${SPGW0_IP} \
-            --mcc=242 --mnc=88 --tac_list="5 6 7" --from_docker_file
+    python3 openair-mme/ci-scripts/generateConfigFiles.py --kind=MME \
+              --hss_s6a=${HSS_IP} --mme_s6a=${MME_IP} \
+              --mme_s1c_IP=${MME_IP} --mme_s1c_name=mme-eth0 \
+              --mme_s10_IP=${MME_IP} --mme_s10_name=mme-eth0 \
+              --mme_s11_IP=${MME_IP} --mme_s11_name=mme-eth0 --spgwc0_s11_IP=${SPGW0_IP} \
+              --mcc=242 --mnc=88 --tac_list="5 6 7" --from_docker_file
 
-  python3 openair-spgwc/ci-scripts/generateConfigFiles.py --kind=SPGW-C \
-            --s11c=spgwc-eth0 --sxc=spgwc-eth0 --apn=apn1.simula.nornet \
-            --dns1_ip=8.8.8.8 --dns2_ip=8.8.4.4 --from_docker_file
+    python3 openair-spgwc/ci-scripts/generateConfigFiles.py --kind=SPGW-C \
+              --s11c=spgwc-eth0 --sxc=spgwc-eth0 --apn=apn1.simula.nornet \
+              --dns1_ip=8.8.8.8 --dns2_ip=8.8.4.4 --from_docker_file
 
-  python3 openair-spgwu-tiny/ci-scripts/generateConfigFiles.py --kind=SPGW-U \
-            --sxc_ip_addr=${SPGW0_IP} --sxu=spgwu-eth0 --s1u=spgwu-eth0 --from_docker_file
+    python3 openair-spgwu-tiny/ci-scripts/generateConfigFiles.py --kind=SPGW-U \
+              --sxc_ip_addr=${SPGW0_IP} --sxu=spgwu-eth0 --s1u=spgwu-eth0 --from_docker_file
 
-  # Copy and execute configuration scripts:
-  sudo -E docker cp ./hss-cfg.sh mn.hss:/openair-hss/scripts
-  sudo -E docker exec -it mn.hss /bin/bash -c "cd /openair-hss/scripts && chmod 777 hss-cfg.sh && ./hss-cfg.sh"
+    # Copy and execute configuration scripts:
+    sudo -E docker cp ./hss-cfg.sh mn.hss:/openair-hss/scripts
+    sudo -E docker exec -it mn.hss /bin/bash -c "cd /openair-hss/scripts && chmod 777 hss-cfg.sh && ./hss-cfg.sh"
 
-  sudo -E docker cp ./mme-cfg.sh mn.mme:/openair-mme/scripts
-  sudo -E docker exec -it mn.mme /bin/bash -c "cd /openair-mme/scripts && chmod 777 mme-cfg.sh && ./mme-cfg.sh"
+    sudo -E docker cp ./mme-cfg.sh mn.mme:/openair-mme/scripts
+    sudo -E docker exec -it mn.mme /bin/bash -c "cd /openair-mme/scripts && chmod 777 mme-cfg.sh && ./mme-cfg.sh"
 
-  sudo -E docker cp ./spgwc-cfg.sh mn.spgwc:/openair-spgwc
-  sudo -E docker exec -it mn.spgwc /bin/bash -c "cd /openair-spgwc && chmod 777 spgwc-cfg.sh && ./spgwc-cfg.sh"
+    sudo -E docker cp ./spgwc-cfg.sh mn.spgwc:/openair-spgwc
+    sudo -E docker exec -it mn.spgwc /bin/bash -c "cd /openair-spgwc && chmod 777 spgwc-cfg.sh && ./spgwc-cfg.sh"
 
-  sudo -E docker cp ./spgwu-cfg.sh mn.spgwu:/openair-spgwu-tiny
-  sudo -E docker exec -it mn.spgwu /bin/bash -c "cd /openair-spgwu-tiny && chmod 777 spgwu-cfg.sh && ./spgwu-cfg.sh"
+    sudo -E docker cp ./spgwu-cfg.sh mn.spgwu:/openair-spgwu-tiny
+    sudo -E docker exec -it mn.spgwu /bin/bash -c "cd /openair-spgwu-tiny && chmod 777 spgwu-cfg.sh && ./spgwu-cfg.sh"
 
-  # Set up basic network monitoring with tshark:
-  sudo -E docker exec -d mn.hss /bin/bash -c "nohup tshark -i hss-eth0 -i eth0 -w /tmp/hss_check_run.pcap 2>&1 > /dev/null"
-  sudo -E docker exec -d mn.mme /bin/bash -c "nohup tshark -i mme-eth0 -i lo:s10 -i eth0 -w /tmp/mme_check_run.pcap 2>&1 > /dev/null"
-  sudo -E docker exec -d mn.spgwc /bin/bash -c "nohup tshark -i spgwc-eth0 -i lo:p5c -i lo:s5c -w /tmp/spgwc_check_run.pcap 2>&1 > /dev/null"
-  sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i spgwu-eth0 -w /tmp/spgwu_check_run.pcap 2>&1 > /dev/null"
+    # Set up basic network monitoring with tshark:
+    sudo -E docker exec -d mn.hss /bin/bash -c "nohup tshark -i hss-eth0 -i eth0 -w /tmp/hss_check_run.pcap 2>&1 > /dev/null"
+    sudo -E docker exec -d mn.mme /bin/bash -c "nohup tshark -i mme-eth0 -i lo:s10 -i eth0 -w /tmp/mme_check_run.pcap 2>&1 > /dev/null"
+    sudo -E docker exec -d mn.spgwc /bin/bash -c "nohup tshark -i spgwc-eth0 -i lo:p5c -i lo:s5c -w /tmp/spgwc_check_run.pcap 2>&1 > /dev/null"
+    sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i spgwu-eth0 -w /tmp/spgwu_check_run.pcap 2>&1 > /dev/null"
 
-  # Start the components one by one, with a slight pause in between:
-  sudo -E docker exec -d mn.hss /bin/bash -c "nohup ./bin/oai_hss -j ./etc/hss_rel14.json --reloadkey true > hss_check_run.log 2>&1"
-  sleep 2
-  sudo -E docker exec -d mn.mme /bin/bash -c "nohup ./bin/oai_mme -c ./etc/mme.conf > mme_check_run.log 2>&1"
-  sleep 2
-  sudo -E docker exec -d mn.spgwc /bin/bash -c "nohup ./bin/oai_spgwc -o -c ./etc/spgw_c.conf > spgwc_check_run.log 2>&1"
-  sleep 2
-  sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup ./bin/oai_spgwu -o -c ./etc/spgw_u.conf > spgwu_check_run.log 2>&1"
-```
+    # Start the components one by one, with a slight pause in between:
+    sudo -E docker exec -d mn.hss /bin/bash -c "nohup ./bin/oai_hss -j ./etc/hss_rel14.json --reloadkey true > hss_check_run.log 2>&1"
+    sleep 2
+    sudo -E docker exec -d mn.mme /bin/bash -c "nohup ./bin/oai_mme -c ./etc/mme.conf > mme_check_run.log 2>&1"
+    sleep 2
+    sudo -E docker exec -d mn.spgwc /bin/bash -c "nohup ./bin/oai_spgwc -o -c ./etc/spgw_c.conf > spgwc_check_run.log 2>&1"
+    sleep 2
+    sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup ./bin/oai_spgwu -o -c ./etc/spgw_u.conf > spgwu_check_run.log 2>&1"
+  ```
 - Add appropriate routing on EPC and eNB VMs:
   - EPC VM: `sudo ip route add 192.168.61.0/24 via 172.17.0.1`
   - eNB VM: `sudo ip route add 192.168.61.0/24 via 10.10.1.6`
