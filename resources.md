@@ -229,11 +229,22 @@ Drawbacks of _option B_: Not very flexible, configuration will be highly specifi
 4. Start the topology with `sudo python epc_p4_topo.py`. This will start the network and configure the switches
 5. Verify connectivity with `pingall`
 
+**Add forwarding and routing**:
+- Forwarding: ```
+  sudo iptables -P FORWARD ACCEPT
+  sudo sysctl net.ipv4.conf.all.forwarding=1
+```
+- Routing:
+  - EPC: `sudo ip route add 192.168.61.0/24 via 172.17.0.1`
+  - RAN: `sudo ip route add 192.168.61.0/24 via 10.10.1.5`
+- Add necessary interface for RAN: `sudo ifconfig lo: 127.0.0.2 netmask 255.0.0.0 up`
+
 **Troubleshooting RAN**:
 - `sudo tshark -i any -f sctp -n`
 - `sudo apt install -y apt install -y linux-image-5.4.0-66-lowlatency linux-headers-5.4.0-66-lowlatency`
 - `git checkout v1.2.2`
-- ```
+- Move generated sim-card data to the appropriate directory:
+```
 cd openairinterface5g/cmake_targets/lte_build_oai/build
 mv .u* ../../
 cd openairinterface5g/targets/bin
@@ -241,22 +252,39 @@ cp usim  ../../cmake_targets
 cp nvram  ../../cmake_targets
 ```
 
-**Starting eNB and UE**:
+**Starting eNB and UE with L2 NFAPI**:
 - Set up localhost interface: `sudo ifconfig lo: 127.0.0.2 netmask 255.0.0.0 up`
+- Start logging: `sudo tshark -i any -f sctp -n -w /tmp/ran_check_run.pcap`
 - eNB: `sudo -E ./lte_build_oai/build/lte-softmodem -O ../ci-scripts/conf_files/rcc.band7.tm1.nfapi.conf > enb.log 2>&1`
 - UE: `sudo -E ./lte_build_oai/build/lte-uesoftmodem -O ../ci-scripts/conf_files/ue.nfapi.conf --L2-emul 3 --num-ues 1 > ue.log 2>&1`
 
-**Saving logs and pcaps from RAN**:
-- ```
-sudo rm -rf archives
-sudo mkdir archives
-sudo cp openairinterface5g/cmake_targets/*.log archives/
-sudo cp openairinterface5g/ci-scripts/conf_files/rcc.band7.tm1.nfapi.conf archives/
-sudo cp openairinterface5g/ci-scripts/conf_files/ue.nfapi.conf archives/
-sudo cp openairinterface5g/openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf archives/
-sudo cp /tmp/ran_check_run.pcap archives/
-sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-ran-archives".zip archives
+**Starting eNB and UE with Basicsim**:
+- *NOTE*: This requires two separate VMs connected on a common network (e.g. 10.10.1.0/24)
+- Use `lte-fdd-basic-sim.conf` for the eNB
+- Start logging on eNB: `sudo tshark -i any -f sctp -n -w /tmp/enb_check_run.pcap`
+- Start logging on UE: `sudo tshark -i any -f sctp -n -w /tmp/ue_check_run.pcap`
+- eNB: `ENODEB=1 sudo -E ./lte_build_oai/build/lte-softmodem -O ../ci-scripts/conf_files/lte-fdd-basic-sim.conf --basicsim > enb.log 2>&1`
+- to generate sim-data for UE: `conf2uedata -c openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf -c cmake_targets/`
+- UE: `TCPBRIDGE=10.10.1.2 sudo -E ./lte_build_oai/build/lte-uesoftmodem -C 2680000000 -r 25 --ue-rxgain 140 --basicsim 2>&1 |tee ue.log`
 
+**Saving logs and pcaps from RAN**:
+```
+# ON THE ENB VM:
+sudo rm -rf eNB
+sudo mkdir eNB
+# eNB:
+sudo cp enb_folder/cmake_targets/*.log eNB/
+sudo cp enb_folder/ci-scripts/conf_files/lte-fdd-basic-sim.conf eNB/
+# sudo cp ue_folder/ci-scripts/conf_files/ue.nfapi.conf RAN/
+
+sudo cp /tmp/enb_check_run.pcap RAN/
+sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-ran-archives".zip RAN
+
+# ON THE UE VM:
+sudo rm -rf UE
+sudo mkdir UE
+sudo cp ue_folder/cmake_targets/*.log UE/
+sudo cp ue_folder/openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf UE/
 ```
 **Changing NAT subnet for vagrant**:
 - https://stackoverflow.com/questions/35208188/how-can-i-define-network-settings-with-vagrant/39081518
@@ -270,10 +298,99 @@ enb.vm.provider "virtualbox" do |v|
 end
 ```
 
+### EPC Setup:
+**Compiling P4 Code**:
+- `p4c --target bmv2 --arch v1model forward.p4`
+
+**Starting EPC***:
+- `sudo python final_topo.py`
+
+**Verifying connectivity and basic iperf test**:
+1. Open three new terminals on EPC VM
+2. In the first terminal, start the EPC topology: `sudo python final_topo.py`
+3. In the second terminal, open a shell in `iperf_dst`: `sudo docker exec -ti mn.iperf_dst /bin/bash`
+  - Ping the SPGW-U: `ping 192.168.62.2`, this should work.
+  - Start the Iperf server: `iperf3 -s -B 192.168.63.3`
+4. In the third terminal, open a shell in `spgw_u`: `sudo docker exec -ti mn.spgwu /bin/bash`
+  - install iperf3: `apt update && apt install -y iperf3`
+  - start the iperf client: `iperf3 -c 192.168.63.3 -B 192.168.62.2`, this should work.
+
+**Configuring EPC for standard operation**:
+- Exit one of the terminals created above, but not the one running the topology-script.
+- Navigate to `/home/netmon/src/openair-components`
+- Follow these instructions:
+```shell
+  # Run and configure Cassandra:
+  sudo docker run --name prod-cassandra -d -e CASSANDRA_CLUSTER_NAME="OAI HSS Cluster" \
+               -e CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch cassandra:2.1
+  sudo docker cp openair-hss/src/hss_rel14/db/oai_db.cql prod-cassandra:/home
+  sudo docker exec -it prod-cassandra /bin/bash -c "nodetool status"
+  Cassandra_IP=`sudo docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-cassandra`
+  sudo docker exec -it prod-cassandra /bin/bash -c "cqlsh --file /home/oai_db.cql ${Cassandra_IP}"
+
+  # Set ENV for EPC IP addresses (these are statically assigned in the topology-script):
+  HSS_IP='192.168.61.2'
+  MME_IP='192.168.61.3'
+  SPGW0_IP='192.168.61.4'
+
+  # Generate configuration files for the EPC components:
+  python3 openair-hss/ci-scripts/generateConfigFiles.py --kind=HSS --cassandra=${Cassandra_IP} \
+            --hss_s6a=${HSS_IP} --apn1=apn1.simula.nornet --apn2=apn2.simula.nornet \
+            --users=200 --imsi=242881234500001 \
+            --ltek=449C4B91AEACD0ACE182CF3A5A72BFA1 --op=1006020F0A478BF6B699F15C062E42B3 \
+            --nb_mmes=1 --from_docker_file
+
+  python3 openair-mme/ci-scripts/generateConfigFiles.py --kind=MME \
+            --hss_s6a=${HSS_IP} --mme_s6a=${MME_IP} \
+            --mme_s1c_IP=${MME_IP} --mme_s1c_name=mme-eth0 \
+            --mme_s10_IP=${MME_IP} --mme_s10_name=mme-eth0 \
+            --mme_s11_IP=${MME_IP} --mme_s11_name=mme-eth0 --spgwc0_s11_IP=${SPGW0_IP} \
+            --mcc=242 --mnc=88 --tac_list="5 6 7" --from_docker_file
+
+  python3 openair-spgwc/ci-scripts/generateConfigFiles.py --kind=SPGW-C \
+            --s11c=spgwc-eth0 --sxc=spgwc-eth0 --apn=apn1.simula.nornet \
+            --dns1_ip=8.8.8.8 --dns2_ip=8.8.4.4 --from_docker_file
+
+  python3 openair-spgwu-tiny/ci-scripts/generateConfigFiles.py --kind=SPGW-U \
+            --sxc_ip_addr=${SPGW0_IP} --sxu=spgwu-eth0 --s1u=spgwu-eth0 --from_docker_file
+
+  # Copy and execute configuration scripts:
+  sudo -E docker cp ./hss-cfg.sh mn.hss:/openair-hss/scripts
+  sudo -E docker exec -it mn.hss /bin/bash -c "cd /openair-hss/scripts && chmod 777 hss-cfg.sh && ./hss-cfg.sh"
+
+  sudo -E docker cp ./mme-cfg.sh mn.mme:/openair-mme/scripts
+  sudo -E docker exec -it mn.mme /bin/bash -c "cd /openair-mme/scripts && chmod 777 mme-cfg.sh && ./mme-cfg.sh"
+
+  sudo -E docker cp ./spgwc-cfg.sh mn.spgwc:/openair-spgwc
+  sudo -E docker exec -it mn.spgwc /bin/bash -c "cd /openair-spgwc && chmod 777 spgwc-cfg.sh && ./spgwc-cfg.sh"
+
+  sudo -E docker cp ./spgwu-cfg.sh mn.spgwu:/openair-spgwu-tiny
+  sudo -E docker exec -it mn.spgwu /bin/bash -c "cd /openair-spgwu-tiny && chmod 777 spgwu-cfg.sh && ./spgwu-cfg.sh"
+
+  # Set up basic network monitoring with tshark:
+  sudo -E docker exec -d mn.hss /bin/bash -c "nohup tshark -i hss-eth0 -i eth0 -w /tmp/hss_check_run.pcap 2>&1 > /dev/null"
+  sudo -E docker exec -d mn.mme /bin/bash -c "nohup tshark -i mme-eth0 -i lo:s10 -i eth0 -w /tmp/mme_check_run.pcap 2>&1 > /dev/null"
+  sudo -E docker exec -d mn.spgwc /bin/bash -c "nohup tshark -i spgwc-eth0 -i lo:p5c -i lo:s5c -w /tmp/spgwc_check_run.pcap 2>&1 > /dev/null"
+  sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i spgwu-eth0 -w /tmp/spgwu_check_run.pcap 2>&1 > /dev/null"
+
+  # Start the components one by one, with a slight pause in between:
+  sudo -E docker exec -d mn.hss /bin/bash -c "nohup ./bin/oai_hss -j ./etc/hss_rel14.json --reloadkey true > hss_check_run.log 2>&1"
+  sleep 2
+  sudo -E docker exec -d mn.mme /bin/bash -c "nohup ./bin/oai_mme -c ./etc/mme.conf > mme_check_run.log 2>&1"
+  sleep 2
+  sudo -E docker exec -d mn.spgwc /bin/bash -c "nohup ./bin/oai_spgwc -o -c ./etc/spgw_c.conf > spgwc_check_run.log 2>&1"
+  sleep 2
+  sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup ./bin/oai_spgwu -o -c ./etc/spgw_u.conf > spgwu_check_run.log 2>&1"
+```
+- Add appropriate routing on EPC and eNB VMs:
+  - EPC VM: `sudo ip route add 192.168.61.0/24 via 172.17.0.1`
+  - eNB VM: `sudo ip route add 192.168.61.0/24 via 10.10.1.6`
+- Verify connectivity from eNB: `ping 192.168.61.3`, this should work.
+  - If this fails, check if forwarding is enabled on EPC VM:
+    - `sudo iptables -P FORWARD ACCEPT`
+    - `sudo sysctl net.ipv4.conf.all.forwarding=1`
+    - Try again
+
 ### Future work
 - Use FOP4 to establish pipelines to test P4-code before rolling it out to production
 - Integrate P4-OvS in Containernet
-
-p4c-bm2-ss --arch v1model -o basic.json \
-  --p4runtime-file basic.p4info --p4runtime-format text \
-  basic.p4
