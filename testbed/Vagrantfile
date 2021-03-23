@@ -26,6 +26,20 @@ Vagrant.configure("2") do |config|
     bmv2.vm.provision "shell", path: "scripts/bootstrap_bmv2.sh"
   end
 
+  # Fresh deployment of the EPC.
+  config.vm.define "epct" do |epct|
+    epct.vm.box = 'ubuntu/bionic64'
+    epct.disksize.size = '50GB'
+    epct.vm.provider "virtualbox" do |v|
+      v.name = "epct"
+      v.memory = 4096
+      v.cpus = 2
+      v.customize ["modifyvm", :id, "--natnet1", "192.168.72.0/24"]
+    end
+    epct.vm.network "private_network", ip: "10.10.1.6", virtualbox__intnet: true
+    epct.vm.provision "shell", path: "scripts/bootstrap_bmv2.sh"
+  end
+
   # Dedicated VM for the Packet Core
   # Currently not used, the EPC is deployed via FOP4 on the BMV2 machine (confusing, I know)
   config.vm.define "epc" do |epc|
@@ -68,29 +82,21 @@ Vagrant.configure("2") do |config|
     end
 
     ran.vm.network "private_network", ip: "10.10.1.2", virtualbox__intnet: true
-    ran.vm.network "private_network", ip: "172.16.1.2", virtualbox__intnet: true
+    # ran.vm.network "private_network", ip: "172.16.1.2", virtualbox__intnet: true
 
     # Install required packages and build binaries
     ran.vm.provision "shell", path: "scripts/bootstrap_ran.sh"
     # Set up forwarding and routing between EPC and RAN
     ran.vm.provision "shell", inline: "iptables -P FORWARD ACCEPT"
     ran.vm.provision "shell", inline: "sysctl net.ipv4.conf.all.forwarding=1"
-    ran.vm.provision "shell", inline: "ip route add 192.168.61.0/24 via 10.10.1.5"
-    # ran.vm.provision "shell", path: "scripts/user_ran.sh"
+    ran.vm.provision "shell", inline: "ip route add 192.168.61.0/24 via 10.10.1.6"
 
     # Copy and move config files to correct locations
-    ran.vm.provision "file", source: "config/rcc.band7.tm1.nfapi.conf", destination: "~/"
-    ran.vm.provision "shell", inline: "mv /home/vagrant/rcc.band7.tm1.nfapi.conf /home/netmon/src/enb_folder/ci-scripts/conf_files/"
-
-    ran.vm.provision "file", source: "config/ue_eurecom_test_sfr.conf", destination: "~/"
-    ran.vm.provision "shell", inline: "mv /home/vagrant/ue_eurecom_test_sfr.conf /home/netmon/src/ue_folder/openair3/NAS/TOOLS/"
-
-    ran.vm.provision "file", source: "config/ue.nfapi.conf", destination: "~/"
-    ran.vm.provision "shell", inline:  "mv /home/vagrant/ue.nfapi.conf /home/netmon/src/ue_folder/ci-scripts/conf_files/"
+    ran.vm.provision "file", source: "config/lte-fdd-basic-sim.conf", destination: "~/"
+    ran.vm.provision "shell", inline: "mv /home/vagrant/lte-fdd-basic-sim.conf /home/netmon/src/enb_folder/ci-scripts/conf_files/"
 
   end
 
-  # NOTE: This is currently not used. I tested having UE and eNB on separate machines, but that did not work as expected
   config.vm.define "ue" do |ue|
     ue.vm.box = "ubuntu/bionic64"
     ue.disksize.size = "20GB"
@@ -102,7 +108,7 @@ Vagrant.configure("2") do |config|
       v.customize ["modifyvm", :id, "--natnet1", "192.168.72.0/24"]
     end
 
-    ue.vm.network "private_network", ip: "172.16.1.3", virtualbox__intnet: true
+    ue.vm.network "private_network", ip: "10.10.1.3", virtualbox__intnet: true
 
     ue.vm.provision "shell", path: "scripts/bootstrap_ran.sh"
   end
