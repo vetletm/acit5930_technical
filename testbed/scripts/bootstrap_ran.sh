@@ -5,7 +5,7 @@ set +x
 apt-get update
 echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y git tshark linux-image-5.4.0-66-lowlatency linux-headers-5.4.0-66-lowlatency
+DEBIAN_FRONTEND=noninteractive apt-get install -y git tshark linux-image-5.4.0-66-lowlatency linux-headers-5.4.0-66-lowlatency iperf3
 
 useradd -m -d /home/netmon -s /bin/bash netmon
 echo "netmon:netmon" | chpasswd
