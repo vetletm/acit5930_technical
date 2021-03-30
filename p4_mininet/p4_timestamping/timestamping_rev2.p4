@@ -23,7 +23,7 @@ header ethernet_t {
 header ipv4_t {
     bit<4>    version;
     bit<4>    ihl;
-    bit<8>    diffserv; // TOS / DSCP -- Use for timestamping the difference of packet - previous packet
+    bit<8>    diffserv;
     bit<16>   totalLen;
     bit<16>   identification;
     bit<3>    flags;
@@ -38,40 +38,24 @@ header ipv4_t {
 header tcp_t {
     bit<16> srcPort;
     bit<16> dstPort;
-    bit<32> seqNo;  // Use as basis to check current packet against previous packet
+    bit<32> seqNo;
     bit<32> ackNo;
     bit<4>  dataOffset;
-    bit<4>  res;
-    bit<1>  cwr;
-    bit<1>  ece;
-    bit<1>  urg;
-    bit<1>  ack;
-    bit<1>  psh;
-    bit<1>  rst;
-    bit<1>  syn;
-    bit<1>  fin;
+    bit<3>  res;
+    bit<3>  ecn;
+    bit<6>  ctrl;
     bit<16> window;
     bit<16> checksum;
     bit<16> urgentPtr;
 }
 
-// Standard 5-tuple
-// struct flow_id_t {
-//     ip4Addr_t   srcAddr;
-//     ip4Addr_t   dstAddr;
-//     bit<16>     srcPort;
-//     bit<16>     dstPort;
-//     bit<8>      protocol;
-// }
-//
-// struct timestamp_t {
-//     bit<16> flow_hash;
-//     bit<32> timestamp;
-// }
-
 struct metadata {
-    // flow_id_t flow_id;
-    // timestamp_t tstamp;
+    bit<32> flow_hash;
+    // bit<32> syn_lastseen;
+    // bit<32> flow_counter;
+    bit<48> flow_tstamp;
+    bit<48> time_now;
+    bit<48> time_diff;
 }
 
 struct headers {
@@ -129,43 +113,57 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 **************  I N G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
 
-control MyIngress(inout headers hdr,
-                  inout metadata meta,
-                  inout standard_metadata_t standard_metadata) {
-    tuple<bit<16>, bit<32>>
+control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+    /* index: flow hash, value: last timestamp */
+    register<bit<48>>(8192) tstamp_register;
+    /* index: 0, value: flow counter */
+    // register<bit<32>>(1) flow_counter_register;
+    /* index: counter, value: flow hash */
+    // register<bit<32>>(32w8192) flow_hash_register;
+    // /* index: hash, value: flow source IP */
+    // register<ip4Addr_t>(32w8192) flow_source_register;
+    // /* index: hash, value: flow source port (16 bit) */
+    // register<bit<16>>(32w8192) flow_sourceport_register;
+    // /* index: hash, value: flow destination IP */
+    // register<ip4Addr_t>(32w8192) flow_destination_register;
+    // /* index: hash, value: flow destination port (16 bit) */
+    // register<bit<16>>(32w8192) flow_destinationport_register;
+    // /* timestamp register */
+    // register<bit<32>>(32w8192) flow_tstamp_register;
+
+    action save_tstamp_information(){
+        /* get flow counter, increment and save */
+        // flow_counter_register.read(meta.flow_counter, (bit<32>) 0);
+        // meta.flow_counter = meta.flow_counter + 1;
+        // /* save flow information to registers */
+        // flow_counter_register.write((bit<32>) 0, meta.flow_counter);
+        // flow_hash_register.write((bit<32>) meta.flow_counter, meta.flow_hash);
+        // flow_source_register.write((bit<32>) meta.flow_hash, hdr.ipv4.srcAddr);
+        // flow_sourceport_register.write((bit<32>) meta.flow_hash, hdr.tcp.srcPort);
+        // flow_destination_register.write((bit<32>) meta.flow_hash, hdr.ipv4.dstAddr);
+        // flow_destinationport_register.write((bit<32>) meta.flow_hash, hdr.tcp.dstPort);
+
+        /* save timestamp per flow */
+        meta.time_now = standard_metadata.ingress_global_timestamp;
+        if (meta.flow_tstamp == 0) {
+            meta.time_diff = 0;
+        } else {
+            meta.time_diff = meta.time_now - meta.flow_tstamp;
+        }
+        meta.flow_tstamp = meta.time_now;
+
+        hdr.ipv4.diffserv = (bit<8>) meta.time_diff;
+
+
+        // hdr.ipv4.diffserv = (bit<8>) meta.flow_hash;
+
+        // tstamp_register.write((bit<32>) meta.flow_hash, meta.flow_tstamp);
+
+        // tstamp_register.write((bit<32>) meta.flow_hash, meta.flow_tstamp);
+    }
 
     action drop() {
         mark_to_drop(standard_metadata);
-    }
-
-    // timestamping logic
-    action tcp_timecheck() {
-        // Set current packet regardless of prev_packet
-        // meta.curr_packet = { hdr.tcp.seqNo, standard_metadata.enq_timestamp };
-        // // if current packet is first in sequence
-        // if (meta.curr_packet[0] == 0) {
-        //     // set curr_packet as prev_packet and move on to forwarding logic
-        //     meta.prev_packet = meta.curr_packet;
-        // } else {
-        //     // If not first in sequence, assume prev_packet exists and check if sequence number is larger
-        //     if (meta.curr_packet[1] > meta.prev_packet[1]) {
-        //         // if larger sequence, store timedelta in diffserv and forward packet
-        //         meta.time_diff = (bit<8>)(meta.curr_packet[1] - meta.prev_packet[1]);
-        //         hdr.ipv4.diffserv = meta.time_diff;
-        //     }
-        //     // finally set prev_packet as curr_packet and move on to forwarding logic
-        //     meta.prev_packet = meta.curr_packet;
-        // }
-        // meta.curr_packet = {hdr.tcp.seqNo, standard_metadata.enq_timestamp};
-        // if (meta.prev_packet) {
-        //     meta.prev_packet = meta.curr_packet;
-        //     hdr.ipv4.diffserv = 0;
-        // } else if (meta.curr_packet[1] > (meta.prev_packet[1])) {
-        //     meta.time_diff = (bit<8>)(meta.curr_packet[1] - meta.prev_packet[1]);
-        //     hdr.ipv4.diffserv = meta.time_diff;
-        // }
-        // // Set current packet as previous packet after updating diffserv-field
-        // meta.prev_packet = meta.curr_packet;
     }
 
     // Basic forwarding logic
@@ -175,17 +173,6 @@ control MyIngress(inout headers hdr,
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
-
-    // table flow_timestamp {
-    //     key = {
-    //         meta.flow_id: exact;
-    //     }
-    //     actions = {
-    //         tcp_timecheck;
-    //         NoAction;
-    //     }
-    //     default_action = NoAction();
-    // }
 
     table ipv4_lpm {
         key = {
@@ -201,13 +188,33 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
-        // For all valid IP
         if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
         }
-        // For all valid TCP
         if (hdr.tcp.isValid()) {
-            flow_timestamp.apply();
+            // If first packet in flow
+            // if ((hdr.tcp.syn == 1 && hdr.tcp.ack == 1) || (hdr.tcp.syn == 1 && hdr.tcp.ack == 0)) {
+            //     meta.flow_tstamp = standard_metadata.enq_timestamp;
+            //     tstamp_register.write((bit<32>) meta.flow_hash, meta.flow_tstamp);
+            //
+            //
+            // } else {
+            // }
+            @atomic {
+                hash(meta.flow_hash,
+                    HashAlgorithm.crc16,
+                    (bit<32>)0,
+                    { hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.tcp.srcPort, hdr.tcp.dstPort },
+                    (bit<32>) 256);
+                meta.flow_tstamp = 0;
+                // flow_counter_register.read(meta.flow_counter, (bit<32>) 0);
+                // meta.flow_counter = meta.flow_counter + 1;
+                // flow_counter_register.write((bit<32>) 0, meta.flow_counter);
+
+                tstamp_register.read(meta.flow_tstamp, (bit<32>) meta.flow_hash);
+                save_tstamp_information();
+                tstamp_register.write((bit<32>) meta.flow_hash, meta.flow_tstamp);
+            }
         }
     }
 }
