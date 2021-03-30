@@ -2,3 +2,7 @@ ubuntu-bionic-*
 */.vagrant/
 *.zip
 mininet_test/
+notes_for_thesis/
+*archives*/
+venv/
+.idea/
