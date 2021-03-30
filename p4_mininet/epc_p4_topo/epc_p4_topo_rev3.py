@@ -50,10 +50,10 @@ info('*** Adding core switch\n')
 s1 = net.addSwitch('s1', cls=OVSKernelSwitch)
 
 info('*** Adding BMV2 switches\n')
-s2 = net.addSwitch('s2', cls=Bmv2Switch, json='./forward.json',
-                   loglevel='debug', switch_config='./s2f_commands.txt')
-s3 = net.addSwitch('s3', cls=Bmv2Switch, json='./forward.json',
-                   loglevel='debug', switch_config='./s3f_commands.txt')
+s2 = net.addSwitch('s2', cls=Bmv2Switch, json='./timestamping_s2.json',
+                   loglevel='debug', pktdump=True, switch_config='./s2f_commands.txt')
+s3 = net.addSwitch('s3', cls=Bmv2Switch, json='./timestamping_s3.json',
+                   loglevel='debug', pktdump=True, switch_config='./s3f_commands.txt')
 
 info('*** Creating links\n')
 net.addLink(hss, s1)
@@ -96,10 +96,10 @@ iperf_dst.cmd('ip route add 12.1.1.0/24 via 192.168.63.2')
 
 info('*** Disabling TCP checksum verification on hosts: iperf_dst, forwarder, spgw_u\n')
 # Don't verify TCP checksums, as BMV2 switches change this up and causes TCP packets to be dropped by the kernel:
-iperf_dst.cmd('ethtool --offload iperf_dst-eth0 rx off tx off sg off')
-forwarder.cmd('ethtool --offload forwarder-eth2 rx off tx off sg off')
-forwarder.cmd('ethtool --offload forwarder-eth3 rx off tx off sg off')
-spgw_u.cmd('ethtool --offload spgwu-eth2 rx off tx off sg off')
+iperf_dst.cmd('ethtool --offload iperf_dst-eth0 rx off tx off')
+forwarder.cmd('ethtool --offload forwarder-eth2 rx off tx off')
+forwarder.cmd('ethtool --offload forwarder-eth3 rx off tx off')
+spgw_u.cmd('ethtool --offload spgwu-eth2 rx off tx off')
 
 info('*** Running CLI\n')
 CLI(net)
