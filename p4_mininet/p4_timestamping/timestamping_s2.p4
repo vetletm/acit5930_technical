@@ -166,7 +166,7 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
         // reverse representation to get actual time_diff from other switch
         meta.inc_milli = (bit<16>) meta.inc_diff_repr[7:4];
         meta.inc_micro = (bit<16>) meta.inc_diff_repr[3:0];
-        meta.inc_time_diff = (bit<48>) ((meta.inc_milli * 1000) + meta.inc_micro);
+        meta.inc_time_diff = (bit<48>) ((meta.inc_milli * 1000) + (meta.inc_micro * 64));
 
         if (meta.inc_time_diff >= meta.time_diff) {
             meta.jitter = meta.inc_time_diff - meta.time_diff;
