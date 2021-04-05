@@ -80,9 +80,8 @@ def main():
                         default=5,
                         type=int)
     parser.add_argument('-Z', '--zerocopy',
-                        help='Use zerocopy method, see Iperf3 docs, true or false',
-                        default=False,
-                        type=bool)
+                        help='Use zerocopy method, see Iperf3 docs.',
+                        action='store_true')
     parser.add_argument('-p', '--port',
                         help='Bind to specific port or default 5201',
                         default=5201,
@@ -122,7 +121,8 @@ def main():
                 print(item)
             exit(0)
 
-    print(f'Will perform {arg_runs} runs with {arg_pause} seconds between each')
+    print(f'Will perform {arg_runs} runs with {arg_duration} seconds duration with'
+          f' {arg_pause} seconds pause between each run')
     results = []
     for i in range(1, arg_runs + 1):
         print(f'performing run {i} of {arg_runs}')
