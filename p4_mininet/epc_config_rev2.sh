@@ -3,29 +3,32 @@
 git clone https://github.com/vetletm/openair-hss.git
 cd openair-hss
 git checkout fop4_extension_new
-sudo -E docker build --target oai-hss --tag oai-hss:production \
-               --file docker/Dockerfile.ubuntu18.04 .
+# PRODUCTION
+sudo -E docker build --target oai-hss --tag oai-hss:production --file docker/Dockerfile.ubuntu18.04 .
+# DEBUG
+sudo -E docker build --target oai-hss --tag oai-hss:debug --file ci-scripts/Dockerfile.ubuntu18.04 .
 
 # MME
 git clone https://github.com/vetletm/openair-mme.git
 cd openair-mme
 git checkout fop4_extension_new
-sudo -E docker build --target oai-mme --tag oai-mme:production \
-              --file docker/Dockerfile.ubuntu18.04 .
+# sudo -E docker build --target oai-mme --tag oai-mme:production --file ci-scripts/Dockerfile.ubuntu18.04 .
+sudo -E docker build --target oai-mme --tag oai-mme:production --file docker/Dockerfile.ubuntu18.04 .
 
 # SPGW-C
 git clone https://github.com/vetletm/openair-spgwc.git
 cd openair-spgwc
 git checkout fop4_extension_new
-sudo -E docker build --target oai-spgwc --tag oai-spgwc:production \
-               --file docker/Dockerfile.ubuntu18.04 .
-
+# sudo -E docker build --target oai-spgwc --tag oai-spgwc:production --file ci-scripts/Dockerfile.ubuntu18.04 .
+sudo -E docker build --target oai-spgwc --tag oai-spgwc:production --file docker/Dockerfile.ubuntu18.04 .
 # SPGW-U
 git clone https://github.com/vetletm/openair-spgwu-tiny.git
 cd openair-spgwu-tiny
 git checkout fop4_extension_new
-sudo -E docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production \
-               --file docker/Dockerfile.ubuntu18.04 .
+# sudo -E docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production --file ci-scripts/Dockerfile.ubuntu18.04 .
+sudo -E docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production --file docker/Dockerfile.ubuntu18.04 .
+
+sudo -E docker image prune --force
 
 # openair-epc-fed
 git clone https://github.com/OPENAIRINTERFACE/openair-epc-fed.git
@@ -46,7 +49,7 @@ SPGW0_IP='192.168.61.4'
 
 python3 openair-hss/ci-scripts/generateConfigFiles.py --kind=HSS --cassandra=${Cassandra_IP} \
           --hss_s6a=${HSS_IP} --apn1=apn1.simula.nornet --apn2=apn2.simula.nornet \
-          --users=1024 --imsi=242881234500000 \
+          --users=200 --imsi=242881234500001 \
           --ltek=449C4B91AEACD0ACE182CF3A5A72BFA1 --op=1006020F0A478BF6B699F15C062E42B3 \
           --nb_mmes=1 --from_docker_file
 
@@ -81,7 +84,21 @@ sudo -E docker exec -it mn.spgwu /bin/bash -c "cd /openair-spgwu-tiny && chmod 7
 sudo -E docker exec -d mn.hss /bin/bash -c "nohup tshark -i hss-eth0 -i eth0 -w /tmp/hss_check_run.pcap 2>&1 > /dev/null"
 sudo -E docker exec -d mn.mme /bin/bash -c "nohup tshark -i mme-eth0 -i lo:s10 -i eth0 -w /tmp/mme_check_run.pcap 2>&1 > /dev/null"
 sudo -E docker exec -d mn.spgwc /bin/bash -c "nohup tshark -i spgwc-eth0 -i lo:p5c -i lo:s5c -w /tmp/spgwc_check_run.pcap 2>&1 > /dev/null"
-sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i spgwu-eth0 -w /tmp/spgwu_check_run.pcap 2>&1 > /dev/null"
+sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i any -w /tmp/spgwu_check_run.pcap 2>&1 > /dev/null"
+
+# Extended forward topology
+sudo -E docker exec -d mn.forwarder /bin/bash -c "nohup tshark -i forwarder-eth2 -i forwarder-eth3 -w /tmp/forwarder_check_run.pcap 2>&1 > /dev/null"
+sudo -E docker exec -d mn.iperf_dst /bin/bash -c "nohup tshark -i iperf_dst-eth0 -w /tmp/iperf_dst_check_run.pcap 2>&1 > /dev/null"
+
+# RAN
+sudo tshark -i any -w /tmp/enb_check_run.pcap
+sudo tshark -i any -w /tmp/ue_check_run.pcap
+
+# Old commands (for non-FOP4 deployments)
+# sudo docker exec -d mn.hss /bin/bash -c "nohup tshark -i eth0 -i eth1 -w /tmp/hss_check_run.pcap 2>&1 > /dev/null"
+# sudo docker exec -d mn.mme /bin/bash -c "nohup tshark -i eth0 -i lo:s10 -w /tmp/mme_check_run.pcap 2>&1 > /dev/null"
+# sudo docker exec -d mn.spgwc /bin/bash -c "nohup tshark -i eth0 -i lo:p5c -i lo:s5c -w /tmp/spgwc_check_run.pcap 2>&1 > /dev/null"
+# sudo docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i eth0 -w /tmp/spgwu_check_run.pcap 2>&1 > /dev/null"
 
 # Start application and write logs
 sudo -E docker exec -d mn.hss /bin/bash -c "nohup ./bin/oai_hss -j ./etc/hss_rel14.json --reloadkey true > hss_check_run.log 2>&1"
@@ -104,22 +121,23 @@ sudo -E docker exec -it mn.spgwc /bin/bash -c "killall --signal SIGKILL oai_spgw
 sudo -E docker exec -it mn.spgwu /bin/bash -c "killall --signal SIGKILL oai_spgwu tshark tcpdump"
 
 # Save logs
-sudo rm -rf archives
-sudo mkdir -p archives/oai-hss-cfg archives/oai-mme-cfg archives/oai-spgwc-cfg archives/oai-spgwu-cfg
+sudo rm -rf EPC
+sudo mkdir -p EPC/oai-hss-cfg EPC/oai-mme-cfg EPC/oai-spgwc-cfg EPC/oai-spgwu-cfg EPC/hss-logs
 
-sudo -E docker cp mn.hss:/openair-hss/etc/. archives/oai-hss-cfg
-sudo -E docker cp mn.mme:/openair-mme/etc/. archives/oai-mme-cfg
-sudo -E docker cp mn.spgwc:/openair-spgwc/etc/. archives/oai-spgwc-cfg
-sudo -E docker cp mn.spgwu:/openair-spgwu-tiny/etc/. archives/oai-spgwu-cfg
+sudo -E docker cp mn.hss:/openair-hss/etc/. EPC/oai-hss-cfg
+sudo -E docker cp mn.mme:/openair-mme/etc/. EPC/oai-mme-cfg
+sudo -E docker cp mn.spgwc:/openair-spgwc/etc/. EPC/oai-spgwc-cfg
+sudo -E docker cp mn.spgwu:/openair-spgwu-tiny/etc/. EPC/oai-spgwu-cfg
 
-sudo -E docker cp mn.hss:/openair-hss/hss_check_run.log archives
-sudo -E docker cp mn.mme:/openair-mme/mme_check_run.log archives
-sudo -E docker cp mn.spgwc:/openair-spgwc/spgwc_check_run.log archives
-sudo -E docker cp mn.spgwu:/openair-spgwu-tiny/spgwu_check_run.log archives
+sudo -E docker cp mn.hss:/openair-hss/hss_check_run.log EPC
+sudo -E docker cp mn.hss:/openair-hss/logs/ EPC/hss-logs
+sudo -E docker cp mn.mme:/openair-mme/mme_check_run.log EPC
+sudo -E docker cp mn.spgwc:/openair-spgwc/spgwc_check_run.log EPC
+sudo -E docker cp mn.spgwu:/openair-spgwu-tiny/spgwu_check_run.log EPC
 
-sudo -E docker cp mn.hss:/tmp/hss_check_run.pcap archives
-sudo -E docker cp mn.mme:/tmp/mme_check_run.pcap archives
-sudo -E docker cp mn.spgwc:/tmp/spgwc_check_run.pcap archives
-sudo -E docker cp mn.spgwu:/tmp/spgwu_check_run.pcap archives
+sudo -E docker cp mn.hss:/tmp/hss_check_run.pcap EPC
+sudo -E docker cp mn.mme:/tmp/mme_check_run.pcap EPC
+sudo -E docker cp mn.spgwc:/tmp/spgwc_check_run.pcap EPC
+sudo -E docker cp mn.spgwu:/tmp/spgwu_check_run.pcap EPC
 
-sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-epc-archives".zip archives
+sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-epc-archives".zip EPC
