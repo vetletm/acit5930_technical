@@ -16,7 +16,8 @@ def run_test(bind_addr: str = '127.0.0.1',
              srv_addr: str = '127.0.0.1',
              port: int = 5201,
              duration: int = 30,
-             zerocopy: bool = False
+             zerocopy: bool = False,
+             run_no: int = 1,
              ) -> Dict[str, Any]:
     """
     Simple method to automate testing, returns a list of KPIs, i.e. Mbps, retransmits, time, CPU usage
@@ -25,6 +26,7 @@ def run_test(bind_addr: str = '127.0.0.1',
     :param port: Server address port
     :param duration: How long to perform test, default is 30s
     :param zerocopy: Use zerocopy to reduce CPU load, default is False
+    :param run_no: ID for the current run, useful for later parsing of the results
     :return: Dict of KPIs
     """
     client = iperf3.Client()
@@ -36,14 +38,16 @@ def run_test(bind_addr: str = '127.0.0.1',
     client.zerocopy = zerocopy
 
     time_start = time()
+    timestamp = strftime('%Y%m%d-%H%M%S')
     result = client.run()
     time_end = time()
 
     total_time = time_end - time_start
     to_return = {
+        'id': run_no,
         'sent_mbps': result.sent_Mbps,
         'retransmits': result.retransmits,
-        'time': strftime('%Y%m%d-%H%M%S'),
+        'timestamp': timestamp,
         'cpu_load': result.local_cpu_total,
         'total_time': total_time
     }
@@ -121,8 +125,13 @@ def main():
                 print(item)
             exit(0)
 
+    filename = f'{strftime("%Y%m%d-%H%M")}-iperf-results'
+    if arg_suffix:
+        filename = filename + f'-{arg_suffix}'
+    filename = filename + '.json'
+
     print(f'Will perform {arg_runs} runs with {arg_duration} seconds duration with'
-          f' {arg_pause} seconds pause between each run')
+          f' {arg_pause} seconds pause between each run and store results to {filename}')
     results = []
     for i in range(1, arg_runs + 1):
         print(f'performing run {i} of {arg_runs}')
@@ -130,15 +139,13 @@ def main():
                           srv_addr=arg_srv,
                           port=arg_port,
                           duration=arg_duration,
-                          zerocopy=arg_zerocopy)
+                          zerocopy=arg_zerocopy,
+                          run_no=i)
         results.append(to_add)
         if arg_runs > 1:
             sleep(arg_pause)
 
-    filename = f'{strftime("%Y%m%d-%H%M%S")}-iperf-results'
-    if arg_suffix:
-        filename = filename + f'-{arg_suffix}'
-    with open(f'{filename}.json', 'w') as f:
+    with open(filename, 'w') as f:
         f.write(json.dumps(results))
 
 
