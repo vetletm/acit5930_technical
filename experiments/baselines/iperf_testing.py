@@ -16,8 +16,7 @@ def run_test(bind_addr: str = '127.0.0.1',
              srv_addr: str = '127.0.0.1',
              port: int = 5201,
              duration: int = 30,
-             zerocopy: bool = False,
-             run_no: int = 1,
+             zerocopy: bool = False
              ) -> Dict[str, Any]:
     """
     Simple method to automate testing, returns a list of KPIs, i.e. Mbps, retransmits, time, CPU usage
@@ -44,10 +43,9 @@ def run_test(bind_addr: str = '127.0.0.1',
 
     total_time = time_end - time_start
     to_return = {
-        'id': run_no,
+        'timestamp': timestamp,
         'sent_mbps': result.sent_Mbps,
         'retransmits': result.retransmits,
-        'timestamp': timestamp,
         'cpu_load': result.local_cpu_total,
         'total_time': total_time
     }
@@ -139,8 +137,7 @@ def main():
                           srv_addr=arg_srv,
                           port=arg_port,
                           duration=arg_duration,
-                          zerocopy=arg_zerocopy,
-                          run_no=i)
+                          zerocopy=arg_zerocopy)
         results.append(to_add)
         if arg_runs > 1:
             sleep(arg_pause)
