@@ -6,4 +6,4 @@ notes_for_thesis/
 *archives*/
 venv/
 .idea/
-*.ods
+.~lock.*
