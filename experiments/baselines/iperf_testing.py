@@ -132,15 +132,20 @@ def main():
           f' {arg_pause} seconds pause between each run and store results to {filename}')
     results = []
     for i in range(1, arg_runs + 1):
-        print(f'performing run {i} of {arg_runs}')
-        to_add = run_test(bind_addr=arg_bind,
-                          srv_addr=arg_srv,
-                          port=arg_port,
-                          duration=arg_duration,
-                          zerocopy=arg_zerocopy)
-        results.append(to_add)
-        if arg_runs > 1:
-            sleep(arg_pause)
+        # Wrap in try-except to ensure results are written to fail even in failure
+        try:
+            print(f'performing run {i} of {arg_runs}')
+            to_add = run_test(bind_addr=arg_bind,
+                              srv_addr=arg_srv,
+                              port=arg_port,
+                              duration=arg_duration,
+                              zerocopy=arg_zerocopy)
+            results.append(to_add)
+            if arg_runs > 1:
+                sleep(arg_pause)
+        except Exception as err:
+            print(err)
+            break
 
     with open(filename, 'w') as f:
         f.write(json.dumps(results))
