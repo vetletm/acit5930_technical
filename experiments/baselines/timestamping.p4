@@ -175,7 +175,9 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
         meta.inc_time_diff = (bit<48>) ((meta.inc_milli * 1000) + (meta.inc_micro * 64));
 
         // Write crucial information to switch logs for further processing
-        log_msg("TIMEDIFFS: flow_hash={}, ip_src={}, time_diff={}, inc_time_diff={}");
+        log_msg("TIMEDIFFS: flow_hash={}, ip_src={}, time_diff={}, inc_time_diff={}",
+                {meta.flow_hash, hdr.ipv4.srcAddr, meta.time_diff, meta.inc_time_diff}
+        );
     }
 
     action drop() {
