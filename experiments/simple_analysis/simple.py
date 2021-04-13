@@ -1,11 +1,10 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
-df1 = pd.read_csv('data/baseline/no_monitoring/20210413-1428-metrics.csv')
-df2 = pd.read_csv('data/baseline/no_monitoring/20210413-1456-metrics.csv')
 
-df3 = pd.read_json('data/baseline/no_monitoring/20210413-1428-iperf-results-metric-collection-no-monitoring.json')
-df4 = pd.read_json('data/baseline/no_monitoring/20210413-1454-iperf-results-metric-collection-no-monitoring.json')
+# Use SVG as default renderer
+matplotlib.use('svg')
 
 # Read baseline iperf3 results
 nm_bw1 = pd.read_json('data/baseline/no_monitoring/20210413-1428-iperf-results-metric-collection-no-monitoring.json')
@@ -68,36 +67,38 @@ baseline_mem = [nm_metric_result['mem1'], hfp_metric_result['mem1'],
 baseline_disk = [nm_metric_result['kb_wrtn'], hfp_metric_result['kb_wrtn'],
                  pcap_metric_result['kb_wrtn'], int_metric_result['kb_wrtn']]
 
-# frames1 = [df1, df2]
-# frames2 = [df3, df4]
-#
-# result1 = pd.concat(frames1, ignore_index=True)
-# result2 = pd.concat(frames2, ignore_index=True)
-#
-# result1_filtered = result1[result1['cpu1'] > 40]
-# result1_filtered = result1_filtered.reset_index().drop(['pid1', 'pid2'], axis=1)
-
+# Draw figures
 fig_baseline_bw = plt.figure(figsize=(10, 10))
 plt.boxplot(baseline_bw, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
 plt.title('Baseline Bandwidth')
-plt.show()
+plt.grid()
+plt.ylabel('Mb/s')
+plt.savefig('baseline_bw')
 
 fig_baseline_retr = plt.figure(figsize=(10, 10))
 plt.boxplot(baseline_retr, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
 plt.title('Baseline Retransmissions')
-plt.show()
+plt.grid()
+plt.ylabel('Retransmissions')
+plt.savefig('baseline_retr')
 
 fig_baseline_cpu = plt.figure(figsize=(10, 10))
 plt.boxplot(baseline_cpu, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
 plt.title('Baseline CPU usage of BMV2 switches')
-plt.show()
+plt.grid()
+plt.ylabel('CPU %')
+plt.savefig('baseline_cpu')
 
 fig_baseline_mem = plt.figure(figsize=(10, 10))
 plt.boxplot(baseline_mem, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
 plt.title('Baseline Memory usage of BMV2 switches')
-plt.show()
+plt.grid()
+plt.ylabel('Mem %')
+plt.savefig('baseline_mem')
 
 fig_baseline_disk = plt.figure(figsize=(10, 10))
 plt.boxplot(baseline_disk, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
 plt.title('Baseline Disk I/O EPC VM, kBytes written')
-plt.show()
+plt.grid()
+plt.ylabel('KBytes')
+plt.savefig('baseline_disk')
