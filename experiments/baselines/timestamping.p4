@@ -1,5 +1,4 @@
 /* -*- P4_16 -*- */
-/* Disclaimer: This p4-code is copied from p4lang/tutorials (exercises/basic/solution) to save time, and I've modified it to reduce TTL by 5 instead of 1 to make it explicitly clear when it has run. */
 #include <core.p4>
 #include <v1model.p4>
 
