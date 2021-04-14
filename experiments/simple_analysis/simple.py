@@ -6,6 +6,16 @@ import pandas as pd
 # Use SVG as default renderer
 matplotlib.use('svg')
 
+
+def save_fig(data, fig_labels, title, ylabel, fig_name):
+    fig = plt.figure(figsize=(10, 10))
+    plt.boxplot(data, labels=fig_labels)
+    plt.title(title)
+    plt.grid()
+    plt.ylabel(ylabel)
+    plt.savefig(fig_name)
+
+
 # Read baseline iperf3 results
 nm_bw1 = pd.read_json('data/baseline/no_monitoring/20210413-1428-iperf-results-metric-collection-no-monitoring.json')
 nm_bw2 = pd.read_json('data/baseline/no_monitoring/20210413-1454-iperf-results-metric-collection-no-monitoring.json')
@@ -47,16 +57,19 @@ hfp_metric_result = pd.concat(hfp_metric_frames, ignore_index=True)
 pcap_metric_result = pd.concat(pcap_metric_frames, ignore_index=True)
 int_metric_result = pd.concat(int_metric_frames, ignore_index=True)
 
+# Filter out results with unexplainably low bandwidth (edge cases)
 nm_result = nm_result[nm_result['sent_mbps'] > 2]
 hfp_result = hfp_result[hfp_result['sent_mbps'] > 2]
 pcap_result = pcap_result[pcap_result['sent_mbps'] > 2]
 int_result = int_result[int_result['sent_mbps'] > 2]
 
+# Filter out results with less than 40% CPU utilization, only keep periods where Iperf3 is running
 nm_metric_result = nm_metric_result[nm_metric_result['cpu1'] > 40]
 hfp_metric_result = hfp_metric_result[hfp_metric_result['cpu1'] > 40]
 pcap_metric_result = pcap_metric_result[pcap_metric_result['cpu1'] > 40]
 int_metric_result = int_metric_result[int_metric_result['cpu1'] > 40]
 
+# Merge related frames together
 baseline_bw = [nm_result['sent_mbps'], hfp_result['sent_mbps'], pcap_result['sent_mbps'], int_result['sent_mbps']]
 baseline_retr = [nm_result['retransmits'], hfp_result['retransmits'],
                  pcap_result['retransmits'], int_result['retransmits']]
@@ -67,38 +80,16 @@ baseline_mem = [nm_metric_result['mem1'], hfp_metric_result['mem1'],
 baseline_disk = [nm_metric_result['kb_wrtn'], hfp_metric_result['kb_wrtn'],
                  pcap_metric_result['kb_wrtn'], int_metric_result['kb_wrtn']]
 
-# Draw figures
-fig_baseline_bw = plt.figure(figsize=(10, 10))
-plt.boxplot(baseline_bw, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
-plt.title('Baseline Bandwidth')
-plt.grid()
-plt.ylabel('Mb/s')
-plt.savefig('baseline_bw')
+# Define content of figures
+labels = ['no_monitoring', 'HFP', 'PCAPs', 'INT']
+to_save = [
+    [baseline_bw, 'Baseline Bandwidth', 'Mb/s', 'baseline_bw'],
+    [baseline_retr, 'Baseline Retransmissions', 'Retransmissions', 'baseline_retr'],
+    [baseline_cpu, 'Baseline CPU Usage of BMV2 Switches', 'CPU %', 'baseline_cpu'],
+    [baseline_mem, 'Baseline Memory Usage of BMV2 Switches', 'Mem %', 'baseline_mem'],
+    [baseline_disk, 'Baseline Disk I/O', 'KBytes/5s', 'baseline_disk']
+]
 
-fig_baseline_retr = plt.figure(figsize=(10, 10))
-plt.boxplot(baseline_retr, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
-plt.title('Baseline Retransmissions')
-plt.grid()
-plt.ylabel('Retransmissions')
-plt.savefig('baseline_retr')
-
-fig_baseline_cpu = plt.figure(figsize=(10, 10))
-plt.boxplot(baseline_cpu, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
-plt.title('Baseline CPU usage of BMV2 switches')
-plt.grid()
-plt.ylabel('CPU %')
-plt.savefig('baseline_cpu')
-
-fig_baseline_mem = plt.figure(figsize=(10, 10))
-plt.boxplot(baseline_mem, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
-plt.title('Baseline Memory usage of BMV2 switches')
-plt.grid()
-plt.ylabel('Mem %')
-plt.savefig('baseline_mem')
-
-fig_baseline_disk = plt.figure(figsize=(10, 10))
-plt.boxplot(baseline_disk, labels=['no_monitoring', 'HFP', 'PCAPs', 'INT'])
-plt.title('Baseline Disk I/O EPC VM, kBytes written')
-plt.grid()
-plt.ylabel('KBytes')
-plt.savefig('baseline_disk')
+# Draw and save figures
+for item in to_save:
+    save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
