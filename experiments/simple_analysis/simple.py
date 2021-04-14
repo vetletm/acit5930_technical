@@ -21,8 +21,8 @@ nm_bw1 = pd.read_json('data/baseline/no_monitoring/20210413-1428-iperf-results-m
 nm_bw2 = pd.read_json('data/baseline/no_monitoring/20210413-1454-iperf-results-metric-collection-no-monitoring.json')
 hfp_bw1 = pd.read_json('data/baseline/high_freq_ping/20210413-1650-iperf-results-metric-collection-hfp.json')
 hfp_bw2 = pd.read_json('data/baseline/high_freq_ping/20210413-1707-iperf-results-metric-collection-hfp.json')
-pcap_bw1 = pd.read_json('data/baseline/pcaps/20210413-1739-iperf-results-metric-collection-pcaps.json')
-pcap_bw2 = pd.read_json('data/baseline/pcaps/20210413-1804-iperf-results-metric-collection-pcaps.json')
+pcap_bw1 = pd.read_json('data/baseline/pcaps/20210414-1325-iperf-results-metric-collection-pcap.json')
+pcap_bw2 = pd.read_json('data/baseline/pcaps/20210414-1344-iperf-results-metric-collection-pcap.json')
 int_bw1 = pd.read_json('data/baseline/int/20210413-1829-iperf-results-metric-collection-int.json')
 int_bw2 = pd.read_json('data/baseline/int/20210413-1851-iperf-results-metric-collection-int.json')
 
@@ -31,8 +31,8 @@ nm_metrics1 = pd.read_csv('data/baseline/no_monitoring/20210413-1428-metrics.csv
 nm_metrics2 = pd.read_csv('data/baseline/no_monitoring/20210413-1456-metrics.csv')
 hfp_metrics1 = pd.read_csv('data/baseline/high_freq_ping/20210413-1652-metrics.csv')
 hfp_metrics2 = pd.read_csv('data/baseline/high_freq_ping/20210413-1709-metrics.csv')
-pcap_metrics1 = pd.read_csv('data/baseline/pcaps/20210413-1741-metrics.csv')
-pcap_metrics2 = pd.read_csv('data/baseline/pcaps/20210413-1807-metrics.csv')
+pcap_metrics1 = pd.read_csv('data/baseline/pcaps/20210414-1325-metrics.csv')
+pcap_metrics2 = pd.read_csv('data/baseline/pcaps/20210414-1344-metrics.csv')
 int_metrics1 = pd.read_csv('data/baseline/int/20210413-1831-metrics.csv')
 int_metrics2 = pd.read_csv('data/baseline/int/20210413-1853-metrics.csv')
 
@@ -79,6 +79,7 @@ baseline_mem = [nm_metric_result['mem1'], hfp_metric_result['mem1'],
                 pcap_metric_result['mem1'], int_metric_result['mem1']]
 baseline_disk = [nm_metric_result['kb_wrtn'], hfp_metric_result['kb_wrtn'],
                  pcap_metric_result['kb_wrtn'], int_metric_result['kb_wrtn']]
+baseline_time = [nm_result['total_time'], hfp_result['total_time'], pcap_result['total_time'], int_result['total_time']]
 
 # Define content of figures
 labels = ['no_monitoring', 'HFP', 'PCAPs', 'INT']
@@ -87,7 +88,8 @@ to_save = [
     [baseline_retr, 'Baseline Retransmissions', 'Retransmissions', 'baseline_retr'],
     [baseline_cpu, 'Baseline CPU Usage of BMV2 Switches', 'CPU %', 'baseline_cpu'],
     [baseline_mem, 'Baseline Memory Usage of BMV2 Switches', 'Mem %', 'baseline_mem'],
-    [baseline_disk, 'Baseline Disk I/O', 'KBytes/5s', 'baseline_disk']
+    [baseline_disk, 'Baseline Disk I/O', 'KBytes/5s', 'baseline_disk'],
+    [baseline_time, 'Baseline Time Usage, Iperf3 Client', 'Seconds', 'baseline_time']
 ]
 
 # Draw and save figures
