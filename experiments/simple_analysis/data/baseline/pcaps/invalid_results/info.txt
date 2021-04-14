@@ -1,0 +1,1 @@
+Forgot to disable debug logging on switches, causes massive amount of disk io.
