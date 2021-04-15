@@ -1,39 +1,35 @@
+#!/usr/bin/env bash
+
+mkdir openair-components
+cd openair-components
+
 # For the EPC components, we're using slightly customized forks to allow them to be controlled by FOP4
 # HSS
-git clone https://github.com/vetletm/openair-hss.git
+git clone --branch fop4_extension_new https://github.com/vetletm/openair-hss.git
 cd openair-hss
-git checkout fop4_extension_new
-# PRODUCTION
 sudo -E docker build --target oai-hss --tag oai-hss:production --file docker/Dockerfile.ubuntu18.04 .
-# DEBUG
-sudo -E docker build --target oai-hss --tag oai-hss:debug --file ci-scripts/Dockerfile.ubuntu18.04 .
+cd ..
 
 # MME
-git clone https://github.com/vetletm/openair-mme.git
+git clone --branch fop4_extension_new https://github.com/vetletm/openair-mme.git
 cd openair-mme
-git checkout fop4_extension_new
-# sudo -E docker build --target oai-mme --tag oai-mme:production --file ci-scripts/Dockerfile.ubuntu18.04 .
 sudo -E docker build --target oai-mme --tag oai-mme:production --file docker/Dockerfile.ubuntu18.04 .
+cd ..
 
 # SPGW-C
-git clone https://github.com/vetletm/openair-spgwc.git
+git clone --branch fop4_extension_new https://github.com/vetletm/openair-spgwc.git
 cd openair-spgwc
-git checkout fop4_extension_new
-# sudo -E docker build --target oai-spgwc --tag oai-spgwc:production --file ci-scripts/Dockerfile.ubuntu18.04 .
 sudo -E docker build --target oai-spgwc --tag oai-spgwc:production --file docker/Dockerfile.ubuntu18.04 .
+cd ..
+
 # SPGW-U
-git clone https://github.com/vetletm/openair-spgwu-tiny.git
+git clone --branch fop4_extension_new https://github.com/vetletm/openair-spgwu-tiny.git
 cd openair-spgwu-tiny
-git checkout fop4_extension_new
-# sudo -E docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production --file ci-scripts/Dockerfile.ubuntu18.04 .
 sudo -E docker build --target oai-spgwu-tiny --tag oai-spgwu-tiny:production --file docker/Dockerfile.ubuntu18.04 .
+cd ..
 
 sudo -E docker image prune --force
 
-# openair-epc-fed
-git clone https://github.com/OPENAIRINTERFACE/openair-epc-fed.git
-cd openair-epc-fed
-git checkout 2021.w06
 
 # From openair-components directory
 sudo docker run --name prod-cassandra -d -e CASSANDRA_CLUSTER_NAME="OAI HSS Cluster" \
@@ -90,16 +86,6 @@ sudo -E docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i any -w /tmp/spgwu_
 sudo -E docker exec -d mn.forwarder /bin/bash -c "nohup tshark -i forwarder-eth2 -i forwarder-eth3 -w /tmp/forwarder_check_run.pcap 2>&1 > /dev/null"
 sudo -E docker exec -d mn.iperf_dst /bin/bash -c "nohup tshark -i iperf_dst-eth0 -w /tmp/iperf_dst_check_run.pcap 2>&1 > /dev/null"
 
-# RAN
-sudo tshark -i any -w /tmp/enb_check_run.pcap
-sudo tshark -i any -w /tmp/ue_check_run.pcap
-
-# Old commands (for non-FOP4 deployments)
-# sudo docker exec -d mn.hss /bin/bash -c "nohup tshark -i eth0 -i eth1 -w /tmp/hss_check_run.pcap 2>&1 > /dev/null"
-# sudo docker exec -d mn.mme /bin/bash -c "nohup tshark -i eth0 -i lo:s10 -w /tmp/mme_check_run.pcap 2>&1 > /dev/null"
-# sudo docker exec -d mn.spgwc /bin/bash -c "nohup tshark -i eth0 -i lo:p5c -i lo:s5c -w /tmp/spgwc_check_run.pcap 2>&1 > /dev/null"
-# sudo docker exec -d mn.spgwu /bin/bash -c "nohup tshark -i eth0 -w /tmp/spgwu_check_run.pcap 2>&1 > /dev/null"
-
 # Start application and write logs
 sudo -E docker exec -d mn.hss /bin/bash -c "nohup ./bin/oai_hss -j ./etc/hss_rel14.json --reloadkey true > hss_check_run.log 2>&1"
 sleep 2
@@ -139,5 +125,7 @@ sudo -E docker cp mn.hss:/tmp/hss_check_run.pcap EPC
 sudo -E docker cp mn.mme:/tmp/mme_check_run.pcap EPC
 sudo -E docker cp mn.spgwc:/tmp/spgwc_check_run.pcap EPC
 sudo -E docker cp mn.spgwu:/tmp/spgwu_check_run.pcap EPC
+sudo -E docker cp mn.forwarder:/tmp/forwarder_check_run.pcap EPC
+sudo -E docker cp mn.iperf_dst:/tmp/iperf_dst_check_run.pcap EPC
 
 sudo -E zip -r -qq "$(date '+%Y%m%d-%H%M%S')-epc-archives".zip EPC
