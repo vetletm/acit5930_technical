@@ -7,3 +7,4 @@ notes_for_thesis/
 venv/
 .idea/
 .~lock.*
+__pycache__/
