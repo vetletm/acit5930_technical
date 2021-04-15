@@ -21,3 +21,16 @@ def save_fig(data, fig_labels, title, ylabel, fig_name):
     plt.grid()
     plt.ylabel(ylabel)
     plt.savefig(fig_name)
+    plt.close(fig)
+
+
+def interleave_lists(l1, l2):
+    """
+    Will interleave two lists of the same length.
+    If l1 = [a, b, c], l2 = [1, 2, 3]
+    result = [a, 1, b, 2, c, 3]
+    :param l1: List with arbitrary elements
+    :param l2: List with arbitrary elements and equal length as l1
+    :return: Interleaved list of l1 + l2
+    """
+    return [val for pair in zip(l1, l2) for val in pair]
