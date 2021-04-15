@@ -23,61 +23,61 @@ pcap_d_metrics2 = pd.read_csv('data/with_delay/pcaps/20210414-1525-metrics.csv')
 int_d_metrics1 = pd.read_csv('data/with_delay/int/20210415-0927-metrics.csv')
 int_d_metrics2 = pd.read_csv('data/with_delay/int/20210415-0952-metrics.csv')
 
-nm_frames = [nm_d_bw1, nm_d_bw2]
-hfp_frames = [hfp_d_bw1, hfp_d_bw2]
-pcap_frames = [pcap_d_bw1, pcap_d_bw2]
-int_frames = [int_d_bw1, int_d_bw2]
+nm_d_frames = [nm_d_bw1, nm_d_bw2]
+hfp_d_frames = [hfp_d_bw1, hfp_d_bw2]
+pcap_d_frames = [pcap_d_bw1, pcap_d_bw2]
+int_d_frames = [int_d_bw1, int_d_bw2]
 
-nm_metric_frames = [nm_d_metrics1, nm_d_metrics2]
-hfp_metric_frames = [hfp_d_metrics1, hfp_d_metrics2]
-pcap_metric_frames = [pcap_d_metrics1, pcap_d_metrics2]
-int_metric_frames = [int_d_metrics1, int_d_metrics2]
+nm_metric_d_frames = [nm_d_metrics1, nm_d_metrics2]
+hfp_metric_d_frames = [hfp_d_metrics1, hfp_d_metrics2]
+pcap_metric_d_frames = [pcap_d_metrics1, pcap_d_metrics2]
+int_metric_d_frames = [int_d_metrics1, int_d_metrics2]
 
-nm_result = pd.concat(nm_frames, ignore_index=True)
-hfp_result = pd.concat(hfp_frames, ignore_index=True)
-pcap_result = pd.concat(pcap_frames, ignore_index=True)
-int_result = pd.concat(int_frames, ignore_index=True)
+nm_d_result = pd.concat(nm_d_frames, ignore_index=True)
+hfp_d_result = pd.concat(hfp_d_frames, ignore_index=True)
+pcap_d_result = pd.concat(pcap_d_frames, ignore_index=True)
+int_d_result = pd.concat(int_d_frames, ignore_index=True)
 
-nm_metric_result = pd.concat(nm_metric_frames, ignore_index=True)
-hfp_metric_result = pd.concat(hfp_metric_frames, ignore_index=True)
-pcap_metric_result = pd.concat(pcap_metric_frames, ignore_index=True)
-int_metric_result = pd.concat(int_metric_frames, ignore_index=True)
+nm_metric_d_result = pd.concat(nm_metric_d_frames, ignore_index=True)
+hfp_metric_d_result = pd.concat(hfp_metric_d_frames, ignore_index=True)
+pcap_metric_d_result = pd.concat(pcap_metric_d_frames, ignore_index=True)
+int_metric_d_result = pd.concat(int_metric_d_frames, ignore_index=True)
 
 # Filter out results with unexplainably low bandwidth (edge cases)
-nm_result = nm_result[nm_result['sent_mbps'] > 2]
-hfp_result = hfp_result[hfp_result['sent_mbps'] > 2]
-pcap_result = pcap_result[pcap_result['sent_mbps'] > 2]
-int_result = int_result[int_result['sent_mbps'] > 2]
+nm_d_result = nm_d_result[nm_d_result['sent_mbps'] > 2]
+hfp_d_result = hfp_d_result[hfp_d_result['sent_mbps'] > 2]
+pcap_d_result = pcap_d_result[pcap_d_result['sent_mbps'] > 2]
+int_d_result = int_d_result[int_d_result['sent_mbps'] > 2]
 
 # Filter out results with less than 40% CPU utilization, only keep periods where Iperf3 is running
-nm_metric_result = nm_metric_result[nm_metric_result['cpu1'] > 40]
-hfp_metric_result = hfp_metric_result[hfp_metric_result['cpu1'] > 40]
-pcap_metric_result = pcap_metric_result[pcap_metric_result['cpu1'] > 40]
-int_metric_result = int_metric_result[int_metric_result['cpu1'] > 40]
+nm_metric_d_result = nm_metric_d_result[nm_metric_d_result['cpu1'] > 40]
+hfp_metric_d_result = hfp_metric_d_result[hfp_metric_d_result['cpu1'] > 40]
+pcap_metric_d_result = pcap_metric_d_result[pcap_metric_d_result['cpu1'] > 40]
+int_metric_d_result = int_metric_d_result[int_metric_d_result['cpu1'] > 40]
 
 delay_bw = [
-    nm_result['sent_mbps'], hfp_result['sent_mbps'],
-    pcap_result['sent_mbps'], int_result['sent_mbps']
+    nm_d_result['sent_mbps'], hfp_d_result['sent_mbps'],
+    pcap_d_result['sent_mbps'], int_d_result['sent_mbps']
 ]
 delay_retr = [
-    nm_result['retransmits'], hfp_result['retransmits'],
-    pcap_result['retransmits'], int_result['retransmits']
+    nm_d_result['retransmits'], hfp_d_result['retransmits'],
+    pcap_d_result['retransmits'], int_d_result['retransmits']
 ]
 delay_cpu = [
-    nm_metric_result['cpu1'], hfp_metric_result['cpu1'],
-    pcap_metric_result['cpu1'], int_metric_result['cpu1']
+    nm_metric_d_result['cpu1'], hfp_metric_d_result['cpu1'],
+    pcap_metric_d_result['cpu1'], int_metric_d_result['cpu1']
 ]
 delay_mem = [
-    nm_metric_result['mem1'], hfp_metric_result['mem1'],
-    pcap_metric_result['mem1'], int_metric_result['mem1']
+    nm_metric_d_result['mem1'], hfp_metric_d_result['mem1'],
+    pcap_metric_d_result['mem1'], int_metric_d_result['mem1']
 ]
 delay_disk = [
-    nm_metric_result['kb_wrtn'], hfp_metric_result['kb_wrtn'],
-    pcap_metric_result['kb_wrtn'], int_metric_result['kb_wrtn']
+    nm_metric_d_result['kb_wrtn'], hfp_metric_d_result['kb_wrtn'],
+    pcap_metric_d_result['kb_wrtn'], int_metric_d_result['kb_wrtn']
 ]
 delay_time = [
-    nm_result['total_time'], hfp_result['total_time'],
-    pcap_result['total_time'], int_result['total_time']
+    nm_d_result['total_time'], hfp_d_result['total_time'],
+    pcap_d_result['total_time'], int_d_result['total_time']
 ]
 
 # Define content of figures
