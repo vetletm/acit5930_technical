@@ -1,6 +1,8 @@
+import itertools
+
 import pandas as pd
 
-from utils import save_fig
+from utils import save_fig, interleave_lists
 
 nm_bw1 = pd.read_json('data/baseline/no_monitoring/20210413-1428-iperf-results-metric-collection-no-monitoring.json')
 nm_bw2 = pd.read_json('data/baseline/no_monitoring/20210413-1454-iperf-results-metric-collection-no-monitoring.json')
@@ -46,59 +48,77 @@ int_d_metrics2 = pd.read_csv('data/with_delay/int/20210415-0952-metrics.csv')
 
 # Combine to a single frame
 nm_frames = [nm_bw1, nm_bw2]
-hfp_frames = [hfp_bw1, hfp_bw2]
-pcap_frames = [pcap_bw1, pcap_bw2]
-int_frames = [int_bw1, int_bw2]
 nm_d_frames = [nm_d_bw1, nm_d_bw2]
+
+hfp_frames = [hfp_bw1, hfp_bw2]
 hfp_d_frames = [hfp_d_bw1, hfp_d_bw2]
+
+pcap_frames = [pcap_bw1, pcap_bw2]
 pcap_d_frames = [pcap_d_bw1, pcap_d_bw2]
+
+int_frames = [int_bw1, int_bw2]
 int_d_frames = [int_d_bw1, int_d_bw2]
 
 nm_metric_frames = [nm_metrics1, nm_metrics2]
-hfp_metric_frames = [hfp_metrics1, hfp_metrics2]
-pcap_metric_frames = [pcap_metrics1, pcap_metrics2]
-int_metric_frames = [int_metrics1, int_metrics2]
 nm_metric_d_frames = [nm_d_metrics1, nm_d_metrics2]
+
+hfp_metric_frames = [hfp_metrics1, hfp_metrics2]
 hfp_metric_d_frames = [hfp_d_metrics1, hfp_d_metrics2]
+
+pcap_metric_frames = [pcap_metrics1, pcap_metrics2]
 pcap_metric_d_frames = [pcap_d_metrics1, pcap_d_metrics2]
+
+int_metric_frames = [int_metrics1, int_metrics2]
 int_metric_d_frames = [int_d_metrics1, int_d_metrics2]
 
 nm_result = pd.concat(nm_frames, ignore_index=True)
-hfp_result = pd.concat(hfp_frames, ignore_index=True)
-pcap_result = pd.concat(pcap_frames, ignore_index=True)
-int_result = pd.concat(int_frames, ignore_index=True)
 nm_d_result = pd.concat(nm_d_frames, ignore_index=True)
+
+hfp_result = pd.concat(hfp_frames, ignore_index=True)
 hfp_d_result = pd.concat(hfp_d_frames, ignore_index=True)
+
+pcap_result = pd.concat(pcap_frames, ignore_index=True)
 pcap_d_result = pd.concat(pcap_d_frames, ignore_index=True)
+
+int_result = pd.concat(int_frames, ignore_index=True)
 int_d_result = pd.concat(int_d_frames, ignore_index=True)
 
 nm_metric_result = pd.concat(nm_metric_frames, ignore_index=True)
-hfp_metric_result = pd.concat(hfp_metric_frames, ignore_index=True)
-pcap_metric_result = pd.concat(pcap_metric_frames, ignore_index=True)
-int_metric_result = pd.concat(int_metric_frames, ignore_index=True)
 nm_metric_d_result = pd.concat(nm_metric_d_frames, ignore_index=True)
+
+hfp_metric_result = pd.concat(hfp_metric_frames, ignore_index=True)
 hfp_metric_d_result = pd.concat(hfp_metric_d_frames, ignore_index=True)
+
+pcap_metric_result = pd.concat(pcap_metric_frames, ignore_index=True)
 pcap_metric_d_result = pd.concat(pcap_metric_d_frames, ignore_index=True)
+
+int_metric_result = pd.concat(int_metric_frames, ignore_index=True)
 int_metric_d_result = pd.concat(int_metric_d_frames, ignore_index=True)
 
 # Filter out results with unexplainably low bandwidth (edge cases)
 nm_result = nm_result[nm_result['sent_mbps'] > 2]
-hfp_result = hfp_result[hfp_result['sent_mbps'] > 2]
-pcap_result = pcap_result[pcap_result['sent_mbps'] > 2]
-int_result = int_result[int_result['sent_mbps'] > 2]
 nm_d_result = nm_d_result[nm_d_result['sent_mbps'] > 2]
+
+hfp_result = hfp_result[hfp_result['sent_mbps'] > 2]
 hfp_d_result = hfp_d_result[hfp_d_result['sent_mbps'] > 2]
+
+pcap_result = pcap_result[pcap_result['sent_mbps'] > 2]
 pcap_d_result = pcap_d_result[pcap_d_result['sent_mbps'] > 2]
+
+int_result = int_result[int_result['sent_mbps'] > 2]
 int_d_result = int_d_result[int_d_result['sent_mbps'] > 2]
 
 # Filter out results with less than 40% CPU utilization, only keep periods where Iperf3 is running
 nm_metric_result = nm_metric_result[nm_metric_result['cpu1'] > 40]
-hfp_metric_result = hfp_metric_result[hfp_metric_result['cpu1'] > 40]
-pcap_metric_result = pcap_metric_result[pcap_metric_result['cpu1'] > 40]
-int_metric_result = int_metric_result[int_metric_result['cpu1'] > 40]
 nm_metric_d_result = nm_metric_d_result[nm_metric_d_result['cpu1'] > 40]
+
+hfp_metric_result = hfp_metric_result[hfp_metric_result['cpu1'] > 40]
 hfp_metric_d_result = hfp_metric_d_result[hfp_metric_d_result['cpu1'] > 40]
+
+pcap_metric_result = pcap_metric_result[pcap_metric_result['cpu1'] > 40]
 pcap_metric_d_result = pcap_metric_d_result[pcap_metric_d_result['cpu1'] > 40]
+
+int_metric_result = int_metric_result[int_metric_result['cpu1'] > 40]
 int_metric_d_result = int_metric_d_result[int_metric_d_result['cpu1'] > 40]
 
 # Merge related frames together
@@ -166,14 +186,16 @@ comparison_int_bw = [
     int_result['sent_mbps'], int_d_result['sent_mbps']
 ]
 
-comparison_all_bw = [
-    nm_result['sent_mbps'], nm_d_result['sent_mbps'],
-    hfp_result['sent_mbps'], hfp_d_result['sent_mbps'],
-    pcap_result['sent_mbps'], pcap_d_result['sent_mbps'],
-    int_result['sent_mbps'], int_d_result['sent_mbps']
-]
+# Create interleaved lists of results with and without delay
+comparison_all_bw = interleave_lists(baseline_bw, delay_bw)
+comparison_retr = interleave_lists(baseline_retr, delay_retr)
+comparison_cpu = interleave_lists(baseline_cpu, delay_cpu)
+comparison_mem = interleave_lists(baseline_mem, delay_mem)
+comparison_disk = interleave_lists(baseline_disk, delay_disk)
+comparison_time = interleave_lists(baseline_time, delay_time)
 
 # Define content of figures
+
 labels = ['no_monitoring', 'HFP', 'PCAPs', 'INT']
 baseline_figs = [
     [baseline_bw, 'Baseline Bandwidth', 'Mb/s', 'figures/no_delay/baseline_bw'],
@@ -232,8 +254,44 @@ to_compare = [
 for item in to_compare:
     save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
 
-save_fig(comparison_all_bw,
-         title='Bandwidth, With and Without Delay, all methods',
-         ylabel='Mb/s',
-         fig_name='figures/comparisons/comp_bw_all',
-         fig_labels=['nm', 'nm_d', 'hfp', 'hfp_d', 'pcap', 'pcap_d', 'int', 'int_d'])
+labels = ['nm', 'nm_d', 'hfp', 'hfp_d', 'pcap', 'pcap_d', 'int', 'int_d']
+to_compare = [
+    [
+        comparison_all_bw,
+        'Bandwidth, With and Without Delay, all methods',
+        'Mb/s',
+        'figures/comparisons/comp_bw_all'
+    ],
+    [
+        comparison_retr,
+        'Retransmissions, With and Without Delay, all methods',
+        '',
+        'figures/comparisons/comp_retr_all'
+    ],
+    [
+        comparison_cpu,
+        'CPU Usage of BMV2 Switches, With and Without Delay, all methods',
+        'CPU %',
+        'figures/comparisons/comp_cpu_all'
+    ],
+    [
+        comparison_mem,
+        'Memory Usage of BMV2 Switches, With and Without Delay, all methods',
+        'Mem %',
+        'figures/comparisons/comp_mem_all'
+    ],
+    [
+        comparison_disk,
+        'Disk Usage of EPC VM, With and Without Delay, all methods',
+        'KBytes/5sec',
+        'figures/comparisons/comp_disk_all'
+    ],
+    [
+        comparison_time,
+        'Iperf3 Time usage, With and Without Delay, all methods',
+        'Seconds',
+        'figures/comparisons/comp_time_all'
+    ]
+]
+for item in to_compare:
+    save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
