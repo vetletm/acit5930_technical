@@ -1,19 +1,6 @@
-import matplotlib
-import matplotlib.pyplot as plt
 import pandas as pd
 
-
-# Use SVG as default renderer
-matplotlib.use('svg')
-
-
-def save_fig(data, fig_labels, title, ylabel, fig_name):
-    fig = plt.figure(figsize=(10, 10))
-    plt.boxplot(data, labels=fig_labels)
-    plt.title(title)
-    plt.grid()
-    plt.ylabel(ylabel)
-    plt.savefig(fig_name)
+from utils import save_fig
 
 
 nm_d_bw1 = pd.read_json('data/with_delay/no_monitoring/100-50ms/'

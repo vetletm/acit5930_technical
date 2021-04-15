@@ -1,19 +1,6 @@
-import matplotlib
-import matplotlib.pyplot as plt
 import pandas as pd
 
-
-# Use SVG as default renderer
-matplotlib.use('svg')
-
-
-def save_fig(data, fig_labels, title, ylabel, fig_name):
-    fig = plt.figure(figsize=(10, 10))
-    plt.boxplot(data, labels=fig_labels)
-    plt.title(title)
-    plt.grid()
-    plt.ylabel(ylabel)
-    plt.savefig(fig_name)
+from utils import save_fig
 
 
 # Read baseline iperf3 results
@@ -70,26 +57,40 @@ pcap_metric_result = pcap_metric_result[pcap_metric_result['cpu1'] > 40]
 int_metric_result = int_metric_result[int_metric_result['cpu1'] > 40]
 
 # Merge related frames together
-baseline_bw = [nm_result['sent_mbps'], hfp_result['sent_mbps'], pcap_result['sent_mbps'], int_result['sent_mbps']]
-baseline_retr = [nm_result['retransmits'], hfp_result['retransmits'],
-                 pcap_result['retransmits'], int_result['retransmits']]
-baseline_cpu = [nm_metric_result['cpu1'], hfp_metric_result['cpu1'],
-                pcap_metric_result['cpu1'], int_metric_result['cpu1']]
-baseline_mem = [nm_metric_result['mem1'], hfp_metric_result['mem1'],
-                pcap_metric_result['mem1'], int_metric_result['mem1']]
-baseline_disk = [nm_metric_result['kb_wrtn'], hfp_metric_result['kb_wrtn'],
-                 pcap_metric_result['kb_wrtn'], int_metric_result['kb_wrtn']]
-baseline_time = [nm_result['total_time'], hfp_result['total_time'], pcap_result['total_time'], int_result['total_time']]
+baseline_bw = [
+    nm_result['sent_mbps'], hfp_result['sent_mbps'],
+    pcap_result['sent_mbps'], int_result['sent_mbps']
+]
+baseline_retr = [
+    nm_result['retransmits'], hfp_result['retransmits'],
+    pcap_result['retransmits'], int_result['retransmits']
+]
+baseline_cpu = [
+    nm_metric_result['cpu1'], hfp_metric_result['cpu1'],
+    pcap_metric_result['cpu1'], int_metric_result['cpu1']
+]
+baseline_mem = [
+    nm_metric_result['mem1'], hfp_metric_result['mem1'],
+    pcap_metric_result['mem1'], int_metric_result['mem1']
+]
+baseline_disk = [
+    nm_metric_result['kb_wrtn'], hfp_metric_result['kb_wrtn'],
+    pcap_metric_result['kb_wrtn'], int_metric_result['kb_wrtn']
+]
+baseline_time = [
+    nm_result['total_time'], hfp_result['total_time'],
+    pcap_result['total_time'], int_result['total_time']
+]
 
 # Define content of figures
 labels = ['no_monitoring', 'HFP', 'PCAPs', 'INT']
 to_save = [
-    [baseline_bw, 'Baseline Bandwidth', 'Mb/s', 'baseline_bw'],
-    [baseline_retr, 'Baseline Retransmissions', 'Retransmissions', 'baseline_retr'],
-    [baseline_cpu, 'Baseline CPU Usage of BMV2 Switches', 'CPU %', 'baseline_cpu'],
-    [baseline_mem, 'Baseline Memory Usage of BMV2 Switches', 'Mem %', 'baseline_mem'],
-    [baseline_disk, 'Baseline Disk I/O', 'KBytes/5s', 'baseline_disk'],
-    [baseline_time, 'Baseline Time Usage, Iperf3 Client', 'Seconds', 'baseline_time']
+    [baseline_bw, 'Baseline Bandwidth', 'Mb/s', 'figures/no_delay/baseline_bw'],
+    [baseline_retr, 'Baseline Retransmissions', 'Retransmissions', 'figures/no_delay/baseline_retr'],
+    [baseline_cpu, 'Baseline CPU Usage of BMV2 Switches', 'CPU %', 'figures/no_delay/baseline_cpu'],
+    [baseline_mem, 'Baseline Memory Usage of BMV2 Switches', 'Mem %', 'figures/no_delay/baseline_mem'],
+    [baseline_disk, 'Baseline Disk I/O', 'KBytes/5s', 'figures/no_delay/baseline_disk'],
+    [baseline_time, 'Baseline Time Usage, Iperf3 Client', 'Seconds', 'figures/no_delay/baseline_time']
 ]
 
 # Draw and save figures
