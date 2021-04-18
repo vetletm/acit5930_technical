@@ -51,9 +51,9 @@ s1 = net.addSwitch('s1', cls=OVSKernelSwitch)
 
 info('*** Adding BMV2 switches\n')
 s2 = net.addSwitch('s2', cls=Bmv2Switch, json='./forwarder.json',
-                   loglevel='debug', pktdump=True, switch_config='./s2f_commands.txt')
+                   loglevel='info', pktdump=True, switch_config='./s2f_commands.txt')
 s3 = net.addSwitch('s3', cls=Bmv2Switch, json='./forwarder.json',
-                   loglevel='debug', pktdump=True, switch_config='./s3f_commands.txt')
+                   loglevel='info', pktdump=True, switch_config='./s3f_commands.txt')
 
 info('*** Creating links\n')
 net.addLink(hss, s1)
