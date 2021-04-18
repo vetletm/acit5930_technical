@@ -9,3 +9,6 @@ venv/
 .~lock.*
 __pycache__/
 data/
+raw_data/
+baseline_results/
+old_results/
