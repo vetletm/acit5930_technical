@@ -1,6 +1,6 @@
 import pandas as pd
 
-from utils import save_fig
+from utils import save_boxplot
 
 
 nm_d_bw1 = pd.read_json('data/with_delay/no_monitoring/'
@@ -82,7 +82,7 @@ delay_time = [
 
 # Define content of figures
 labels = ['no_monitoring', 'HFP', 'PCAPs', 'INT']
-to_save = [
+delay_figs = [
     [delay_bw, 'Delay Bandwidth', 'Mb/s', 'figures/with_delay/delay_bw'],
     [delay_retr, 'Delay Retransmissions', 'Retransmissions', 'figures/with_delay/delay_retr'],
     [delay_cpu, 'Delay CPU Usage of BMV2 Switches', 'CPU %', 'figures/with_delay/delay_cpu'],
@@ -92,5 +92,5 @@ to_save = [
 ]
 
 # Draw and save figures
-for item in to_save:
-    save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
+for item in delay_figs:
+    save_boxplot(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])

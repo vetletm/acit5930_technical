@@ -1,11 +1,9 @@
-import itertools
-
 import pandas as pd
 
-from utils import save_fig, interleave_lists
+from utils import save_boxplot, interleave_lists
 
-nm_bw1 = pd.read_json('data/baseline/no_monitoring/20210413-1428-iperf-results-metric-collection-no-monitoring.json')
-nm_bw2 = pd.read_json('data/baseline/no_monitoring/20210413-1454-iperf-results-metric-collection-no-monitoring.json')
+nm_bw1 = pd.read_json('data/baseline/no_monitoring/20210416-1308-iperf-results-metric-collection-no-monitoring.json')
+nm_bw2 = pd.read_json('data/baseline/no_monitoring/20210416-1325-iperf-results-metric-collection-no-monitoring.json')
 nm_d_bw1 = pd.read_json('data/with_delay/no_monitoring/'
                         '20210414-1237-iperf-results-metric-collection-no-monitoring-with-delay.json')
 nm_d_bw2 = pd.read_json('data/with_delay/no_monitoring/'
@@ -26,8 +24,8 @@ int_bw2 = pd.read_json('data/baseline/int/20210413-1851-iperf-results-metric-col
 int_d_bw1 = pd.read_json('data/with_delay/int/20210415-0927-iperf-results-metric-collection-int-delay.json')
 int_d_bw2 = pd.read_json('data/with_delay/int/20210415-0952-iperf-results-metric-collection-int-delay.json')
 
-nm_metrics1 = pd.read_csv('data/baseline/no_monitoring/20210413-1428-metrics.csv')
-nm_metrics2 = pd.read_csv('data/baseline/no_monitoring/20210413-1456-metrics.csv')
+nm_metrics1 = pd.read_csv('data/baseline/no_monitoring/20210416-1308-metrics.csv')
+nm_metrics2 = pd.read_csv('data/baseline/no_monitoring/20210416-1325-metrics.csv')
 nm_d_metrics1 = pd.read_csv('data/with_delay/no_monitoring/20210414-1237-metrics.csv')
 nm_d_metrics2 = pd.read_csv('data/with_delay/no_monitoring/20210414-1256-metrics.csv')
 
@@ -208,7 +206,7 @@ baseline_figs = [
 
 # Draw and save figures
 for item in baseline_figs:
-    save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
+    save_boxplot(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
 
 delay_figs = [
     [delay_bw, 'Delay Bandwidth', 'Mb/s', 'figures/with_delay/delay_bw'],
@@ -221,7 +219,7 @@ delay_figs = [
 
 # Draw and save figures
 for item in delay_figs:
-    save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
+    save_boxplot(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
 
 # Prepare figure data for comparisons
 labels = ['Without Delay', 'With Delay']
@@ -252,7 +250,7 @@ to_compare = [
     ],
 ]
 for item in to_compare:
-    save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
+    save_boxplot(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
 
 labels = ['nm', 'nm_d', 'hfp', 'hfp_d', 'pcap', 'pcap_d', 'int', 'int_d']
 to_compare = [
@@ -294,4 +292,4 @@ to_compare = [
     ]
 ]
 for item in to_compare:
-    save_fig(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
+    save_boxplot(data=item[0], fig_labels=labels, title=item[1], ylabel=item[2], fig_name=item[3])
