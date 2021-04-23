@@ -55,5 +55,5 @@ axs[1].boxplot(baseline_retr, labels=labels)
 axs[1].set_title('Baseline Retransmissions, multiple readings')
 axs[1].set_ylabel('retransmissions')
 
-plt.savefig('baseline_bw_retr')
+plt.savefig('figures/baseline_bw_retr')
 plt.close(fig)
