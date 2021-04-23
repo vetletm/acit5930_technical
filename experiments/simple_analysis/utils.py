@@ -1,8 +1,8 @@
-import matplotlib
+# import matplotlib
 import matplotlib.pyplot as plt
 
 # Use SVG as default renderer
-matplotlib.use('svg')
+# matplotlib.use('png')
 
 
 def save_boxplot(data, fig_labels, title, ylabel, fig_name):
@@ -44,7 +44,7 @@ def save_scatterplot(x, y, title, ylabel, xlabel, fig_name):
     plt.close(fig)
 
 
-def save_scatter_with_line_regr(x, y, m, b, title, ylabel, xlabel, fig_name):
+def save_scatter_with_line_regr(x, y, m, b, title, ylabel, xlabel, eq_label, fig_name):
     """
     Takes x, y and draws scatter plot with line regression
     :param x: Data to plot in x
@@ -54,16 +54,18 @@ def save_scatter_with_line_regr(x, y, m, b, title, ylabel, xlabel, fig_name):
     :param title: Title of the figure
     :param ylabel: Y label
     :param xlabel: X label
+    :param eq_label: Equation of fit
     :param fig_name: Name to save as
     :return: None
     """
     fig = plt.figure(figsize=(10, 10))
     plt.plot(x, y, 'o')
-    plt.plot(x, m*x + b)
+    plt.plot(x, m*x + b, label=eq_label)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
     plt.grid(True)
+    plt.legend(fontsize='small')
     plt.savefig(fig_name)
     plt.close(fig)
 

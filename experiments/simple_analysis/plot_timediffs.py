@@ -3,22 +3,22 @@ import numpy as np
 
 from datetime import datetime
 
-from utils import save_scatter_with_line_regr, save_histogram
+from utils import save_scatter_with_line_regr
 
 
 print(datetime.now(), 'Starting parsing')
 # These are more than 580,000 lines each, be patient
-s2_timediffs = pd.read_json('data/baseline/int/s2_timediffs.json').sample(5000)
-s3_timediffs = pd.read_json('data/baseline/int/s3_timediffs.json').sample(5000)
-print(datetime.now(), 'Parsed INT baseline, 10000 samples')
+s2_timediffs = pd.read_json('data/baseline/int/s2_timediffs.json').sample(50000)
+s3_timediffs = pd.read_json('data/baseline/int/s3_timediffs.json').sample(50000)
+print(datetime.now(), 'Parsed INT baseline, 100000 samples')
 
-s2_timediffs_d = pd.read_json('data/with_delay/int/s2_timediffs.json').sample(5000)
-s3_timediffs_d = pd.read_json('data/with_delay/int/s3_timediffs.json').sample(5000)
-print(datetime.now(), 'Parsed INT with delay, 10000 samples')
+s2_timediffs_d = pd.read_json('data/with_delay/int/s2_timediffs.json').sample(50000)
+s3_timediffs_d = pd.read_json('data/with_delay/int/s3_timediffs.json').sample(50000)
+print(datetime.now(), 'Parsed INT with delay, 100000 samples')
 
-s2_timediffs_ed = pd.read_json('data/with_delay/int_epc_delay/s2_timediffs.json').sample(5000)
-s3_timediffs_ed = pd.read_json('data/with_delay/int_epc_delay/s3_timediffs.json').sample(5000)
-print(datetime.now(), 'Parsed INT with delay at EPC, 10000 samples')
+s2_timediffs_ed = pd.read_json('data/with_delay/int_epc_delay/s2_timediffs.json').sample(50000)
+s3_timediffs_ed = pd.read_json('data/with_delay/int_epc_delay/s3_timediffs.json').sample(50000)
+print(datetime.now(), 'Parsed INT with delay at EPC, 100000 samples')
 
 items = [
     ('s2', s2_timediffs), ('s3', s3_timediffs),
@@ -39,12 +39,14 @@ for item in items:
 
     m, b = np.polyfit(x, y, 1)
 
+    eq_label = f'{round(m, 3)}x + {round(b, 3)}'
+
     title = f'Time Diff vs Inc Time Diff, {name}'
     # Draw and save figures
     # save_histogram(x, y, 30, title, 'Millisecs', f'figures/int/hists/{name}_td_v_itd_hist')
-    save_scatter_with_line_regr(x, y, m, b, title, 'inc_time_diff', 'time_diff',
-                                f'figures/int/scatter_line_reg/{name}_td_v_itd_scatter_lineregr')
+    save_scatter_with_line_regr(x, y, m, b, title, 'inc_time_diff', 'time_diff', eq_label,
+                                f'figures/int/scatter_line_reg_with_equation/{name}_td_v_itd_scatter_lineregr')
 
-    print(datetime.now(), f'--- Draw histogram and scatterplott of {name}')
+    print(datetime.now(), f'--- Drawn scatterplott of {name}')
 
 print(datetime.now(), 'Finished parsing and drawing')
