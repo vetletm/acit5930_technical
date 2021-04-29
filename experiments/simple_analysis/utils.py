@@ -102,3 +102,18 @@ def interleave_lists(l1, l2):
     :return: Interleaved list of l1 + l2
     """
     return [val for pair in zip(l1, l2) for val in pair]
+
+
+def dec_to_ip(decimal_representation):
+    """
+    Takes IP represented by integers (which are a result of hex-values) and returns the dotted decimal form
+    :param decimal_representation: IP as integer, i.e. '3232251651' or '3232251394'
+    :return: Dotted decimal form
+    """
+    hex_repr = hex(int(decimal_representation))
+    hex_repr = hex_repr[2:]
+    # pad with extra 0 if hex-representation is less than 8 (will only happen in cases where first octet is <15)
+    if len(hex_repr) < 8:
+        hex_repr = ''.join(('0', hex_repr))
+    ip_addr = '.'.join([str(int(hex_repr[i:i + 2], 16)) for i in range(0, len(hex_repr), 2)])
+    return ip_addr
