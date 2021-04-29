@@ -50,9 +50,10 @@ header tcp_t {
 
 struct metadata {
     bit<32> flow_hash;
-    bit<8>  pcount;
-    bit<8>  inc_pcount;
-    bit<8>  pcount_diff;
+    bit<48> flow_tstamp;
+    bit<48> time_now;
+    bit<48> time_diff;
+    bit<8>  packet_count;
 }
 
 struct headers {
@@ -111,23 +112,26 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 *************************************************************************/
 
 control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
+    /* index: flow_hash, value: first timestamp */
+    register<bit<48>>(8192) tstamp_register;
     /* index: flow_hash, value: packet counter */
-    register<bit<8>>(8192) pcounter;
+    register<bit<8>>(8192) packet_counter;
 
     action drop() {
         mark_to_drop(standard_metadata);
     }
 
-    action store_ploss() {
-        // Stores the difference between current packet counter and incoming packet counter
-        if (meta.pcount < meta.inc_pcount) {
-            meta.pcount_diff = meta.inc_pcount - meta.pcount;
+    action check_time() {
+        // Checks if time since first packet in epoc is >10,000 (i.e. 10 milliseconds)
+        meta.time_now = standard_metadata.ingress_global_timestamp;
+
+        // If current timestamp is 10msec after first tstamp, reset and write packet_count to packet
+        meta.time_diff = meta.time_now - meta.flow_tstamp;
+        if (meta.time_diff > 10000) {
+            meta.flow_tstamp = meta.time_now;
+            hdr.ipv4.diffserv = meta.packet_count;
+            meta.packet_count = 0;
         }
-        log_msg("PLOSS: pcount = {}, inc_pcount = {}, pcount_diff = {}",
-                {meta.pcount, meta.inc_pcount, meta.pcount_diff}
-        );
-        // Reset pcount to 0 after receiving a packet count from another switch in given flow
-        meta.pcount = 0;
     }
 
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
@@ -164,16 +168,26 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
                     (bit<32>) 8192);
 
                 // increment packet counter
-                pcounter.read(meta.pcount, (bit<32>) meta.flow_hash);
-                meta.pcount = meta.pcount + 1;
+                packet_counter.read(meta.packet_count, (bit<32>) meta.flow_hash);
+                meta.packet_count = meta.packet_count + 1;
 
-                // If incoming packet has TOS field marked, assume its used for ploss and write ploss to logs
-                meta.inc_pcount = hdr.ipv4.diffserv;
-                if (meta.inc_pcount > 0) {
-                    store_ploss();
+                // Set flow_tstamp to 0 before reading from register to check if it is first packet in flow
+                meta.flow_tstamp = 0;
+                tstamp_register.read(meta.flow_tstamp, (bit<32>) meta.flow_hash);
+
+                // If first packet in flow, tstamp is zero
+                if (meta.flow_tstamp == 0) {
+                    tstamp_register.write((bit<32>) meta.flow_hash, standard_metadata.ingress_global_timestamp);
+                } else {
+                    // If not first packet in flow, check time
+                    check_time();
+                    tstamp_register.write((bit<32>) meta.flow_hash, meta.flow_tstamp);
                 }
-
-                pcounter.write((bit<32>) meta.flow_hash, meta.pcount);
+                if (hdr.ipv4.diffserv > 0 ) {
+                    log_msg("PCOUNTER: egress_spec = {}, pcount = {}", {standard_metadata.egress_spec, hdr.ipv4.diffserv});
+                }
+                // Finally, write packet count and timestamp to registers
+                packet_counter.write((bit<32>) meta.flow_hash, meta.packet_count);
             }
         }
     }
