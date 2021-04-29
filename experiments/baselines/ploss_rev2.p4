@@ -56,7 +56,6 @@ struct metadata {
     bit<8>  pcount;
     bit<8>  inc_pcount;
     bit<8>  pcount_diff;
-    bit<8>  packet_count;
     bit<8>  ploss_count;
 }
 
@@ -135,8 +134,8 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
         meta.time_diff = meta.time_now - meta.flow_tstamp;
         if (meta.time_diff > 10000) {
             meta.flow_tstamp = meta.time_now;
-            hdr.ipv4.diffserv = meta.packet_count;
-            meta.packet_count = 0;
+            hdr.ipv4.diffserv = meta.pcount;
+            meta.pcount = 0;
         }
     }
 
@@ -145,10 +144,13 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
         if (meta.ploss_count < meta.inc_pcount) {
             meta.pcount_diff = meta.inc_pcount - meta.ploss_count;
         }
-        log_msg("PLOSS: ploss_count = {}, inc_pcount = {}, pcount_diff = {}",
-                {meta.ploss_count, meta.inc_pcount, meta.pcount_diff}
+        log_msg("PLOSS: hash = {}, sAddr = {}, dAddr = {}, prot = {}, sPort = {}, dPort = {}, ploss_count = {}, inc_pcount = {}, pcount_diff = {}",
+                {   meta.flow_hash, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr,
+                    hdr.ipv4.protocol, hdr.tcp.srcPort, hdr.tcp.dstPort,
+                    meta.ploss_count, meta.inc_pcount, meta.pcount_diff
+                }
         );
-        // Reset pcount to 0 after receiving a packet count from another switch in given flow
+        // Reset ploss to 0 after receiving a packet count from another switch in given flow
         meta.ploss_count = 0;
     }
 
@@ -185,19 +187,24 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
                     { hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.tcp.srcPort, hdr.tcp.dstPort },
                     (bit<32>) 8192);
 
-                // increment packet counter
-                pcount_register.read(meta.packet_count, (bit<32>) meta.flow_hash);
-                meta.packet_count = meta.packet_count + 1;
-
-                // increment ploss counter
+                // read timestamp, pcount, ploss and tcount from register
+                tstamp_register.read(meta.flow_tstamp, (bit<32>) meta.flow_hash);
+                pcount_register.read(meta.pcount, (bit<32>) meta.flow_hash);
                 ploss_register.read(meta.ploss_count, (bit<32>) meta.flow_hash);
+
+                // increment pcount and ploss
+                meta.pcount = meta.pcount + 1;
                 meta.ploss_count = meta.ploss_count + 1;
 
-                // Set flow_tstamp to 0 before reading from register to check if it is first packet in flow
-                meta.flow_tstamp = 0;
-                tstamp_register.read(meta.flow_tstamp, (bit<32>) meta.flow_hash);
+                // check mark, if mark seen, write ploss to log and reset ploss
+                meta.inc_pcount = hdr.ipv4.diffserv;
+                if (meta.inc_pcount > 0) {
+                    store_ploss();
+                    // Reset TOS field
+                    hdr.ipv4.diffserv = 0;
+                }
 
-                // If first packet in flow, tstamp is zero
+                // check time, if end of epoch, mark packet with pcount and reset pcount
                 if (meta.flow_tstamp == 0) {
                     tstamp_register.write((bit<32>) meta.flow_hash, standard_metadata.ingress_global_timestamp);
                 } else {
@@ -206,21 +213,14 @@ control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadat
                     tstamp_register.write((bit<32>) meta.flow_hash, meta.flow_tstamp);
                 }
 
-                // If incoming packet has TOS field marked, assume its used for ploss and write ploss to logs
-                meta.inc_pcount = hdr.ipv4.diffserv;
-                if (meta.inc_pcount > 0) {
-                    store_ploss();
-                }
-
-                // If ploss count exceeds 240, assume flow is not coming from other switch and reset once in a while
+                // if ploss > 240, reset ploss to avoid overflows
                 if (meta.ploss_count > 240) {
                     meta.ploss_count = 0;
                 }
-                // Finally, write packet count and timestamp to registers
-                pcount_register.write((bit<32>) meta.flow_hash, meta.packet_count);
-                ploss_register.write((bit<32>) meta.flow_hash, meta.ploss_count);
 
-                log_msg("TOTCOUNT: tcount = 1");
+                // Write pcount, ploss and tcount to registers
+                pcount_register.write((bit<32>) meta.flow_hash, meta.pcount);
+                ploss_register.write((bit<32>) meta.flow_hash, meta.ploss_count);
             }
         }
     }
