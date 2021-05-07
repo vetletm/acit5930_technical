@@ -1,9 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
-import matplotlib.pyplot as plt
-
-from matplotlib.ticker import PercentFormatter
+import numpy as np
 
 from utils import dec_to_ip
 
@@ -23,32 +21,45 @@ for name in names:
 
 print(datetime.now(), 'Finished parsing')
 
-# s2_ploss = pd.read_json('data/ploss/s2_ploss.json')
-# s3_ploss = pd.read_json('data/ploss/s3_ploss.json')
-
 # Transform integer notated IP address to dotted decimal form
 for item in items:
     for key in ['sAddr', 'dAddr']:
         item[0][key] = item[0][key].apply(lambda x: dec_to_ip(x))
 
+# Create new aggregated dataframes with the most important information about the results
 results = []
 for item in items:
     result = item[0].groupby('hash').agg(
         total_pcount=('ploss_count', sum),
-        total_inc_pcount=('inc_pcount', sum),
-        total_loss=('pcount_diff', sum)
+        total_loss=('pcount_diff', sum),
+        sAddr=('sAddr', set),
+        dAddr=('dAddr', set),
+        sPort=('sPort', set),
+        dPort=('dPort', set),
+        prot=('prot', set)
     )
-    # add new column that displays the loss percent of each flow
     result['loss_percent'] = (result['total_loss'] / result['total_pcount']) * 100
+    result['switch'] = item[1]
+    result['case'] = item[2]
     result = result[result['total_pcount'] > 1000]
     results.append(result)
 
-final = []
-for result, item in zip(results, items):
-    final.append({
-        'name': item[1],
-        'case': item[2],
-        'loss_percent': round(result['loss_percent'].mean(), 3)
-    })
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_colwidth', None)
+pd.set_option('display.width', 2000)
+for item in results:
+    # Extract all possible hash collisions, i.e. 2 or more elements in sPort or dPort
+    dport_collisions = item.loc[item['dPort'].apply(lambda x: len(list(x)) > 1)]
+    sport_collisions = item.loc[item['sPort'].apply(lambda x: len(list(x)) > 1)]
+    hash_collisions = pd.concat([dport_collisions, sport_collisions], ignore_index=True)
+    # Clean up the final tables to be printed, i.e. all sets are converted to comma-separated values in a string
+    to_clean = ['sAddr', 'dAddr', 'sPort', 'dPort', 'prot']
+    for column in to_clean:
+        item[column] = item[column].apply(lambda x: ','.join(str(i) for i in x))
 
-print(final)
+    print(item.sample(5))
+    print('mean loss:', round(item['loss_percent'].mean(), 3))
+    if not hash_collisions.empty:
+        print('hash collisions:')
+        print(hash_collisions)
+    print()
