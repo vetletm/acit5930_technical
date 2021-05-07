@@ -58,7 +58,7 @@ def save_scatter_with_line_regr(x, y, m, b, title, ylabel, xlabel, eq_label, fig
     :param fig_name: Name to save as
     :return: None
     """
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(5, 5))
     plt.plot(x, y, 'o')
     plt.plot(x, m*x + b, label=eq_label)
     plt.xlabel(xlabel)
